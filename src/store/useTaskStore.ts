@@ -3,12 +3,15 @@ import { db } from '../db/database';
 import { Task, Habit, HabitLogEntry, ViewMode, ToastMessage } from '../types';
 import { getTodayString, calculateNextDueDate } from '../utils/dateHelpers';
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 interface TaskStore {
   tasks: Task[];
   habits: Habit[];
   habitLogs: HabitLogEntry[];
   initialized: boolean;
   activeView: ViewMode;
+  theme: ThemeMode;
   
   // UI state
   isEditorOpen: boolean;
@@ -23,8 +26,9 @@ interface TaskStore {
   // Database initialization & load
   loadData: () => Promise<void>;
 
-  // Navigation
+  // Navigation & Theme
   setActiveView: (view: ViewMode) => void;
+  setTheme: (theme: ThemeMode) => void;
 
   // Task Actions
   addTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'completed'>) => Promise<void>;
@@ -52,12 +56,37 @@ interface TaskStore {
   removeToast: (id: string) => void;
 }
 
+const getSavedTheme = (): ThemeMode => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('taskly-theme') as ThemeMode;
+    if (saved && ['light', 'dark', 'system'].includes(saved)) {
+      return saved;
+    }
+  }
+  return 'system';
+};
+
+const applyThemeToDOM = (theme: ThemeMode) => {
+  if (typeof window === 'undefined') return;
+  const root = document.documentElement;
+  const isDark =
+    theme === 'dark' ||
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  if (isDark) {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
+};
+
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: [],
   habits: [],
   habitLogs: [],
   initialized: false,
   activeView: 'today',
+  theme: getSavedTheme(),
   
   isEditorOpen: false,
   editingTaskId: null,
@@ -70,6 +99,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   loadData: async () => {
     try {
+      // Apply theme on load
+      applyThemeToDOM(get().theme);
+
       let tasks = await db.tasks.toArray();
       let habits = await db.habits.toArray();
       let habitLogs = await db.habitLogs.toArray();
@@ -165,7 +197,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           }
         ];
 
-        // Seed initial habit log for past 2 days to demonstrate streak calculation
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -197,6 +228,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   setActiveView: (view: ViewMode) => set({ activeView: view }),
+
+  setTheme: (theme: ThemeMode) => {
+    localStorage.setItem('taskly-theme', theme);
+    applyThemeToDOM(theme);
+    set({ theme });
+  },
 
   addTask: async (taskData) => {
     const newTask: Task = {
@@ -248,14 +285,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const willBeCompleted = !task.completed;
 
     if (willBeCompleted && task.recurring !== 'none') {
-      // Mark current instance as completed
       const updatedCurrent: Task = {
         ...task,
         completed: true,
         completedAt: Date.now(),
       };
 
-      // Create new recurring instance with advanced date
       const nextDueDate = calculateNextDueDate(task.dueDate, task.recurring);
       const newRecurringTask: Task = {
         ...task,
@@ -264,7 +299,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         completed: false,
         completedAt: undefined,
         createdAt: Date.now(),
-        // Reset subtasks for next instance
         subtasks: task.subtasks.map(st => ({ ...st, done: false })),
       };
 
@@ -390,7 +424,6 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const id = `toast-${Date.now()}-${Math.random()}`;
     set(state => ({ toasts: [...state.toasts, { id, type, message }] }));
 
-    // Auto remove after 3 seconds
     setTimeout(() => {
       get().removeToast(id);
     }, 3200);

@@ -3,7 +3,7 @@ import { useTaskStore } from '../store/useTaskStore';
 import { SegmentedProgressBar } from '../components/common/SegmentedProgressBar';
 import { isTaskOverdue, isTaskDueToday, getTodayString } from '../utils/dateHelpers';
 import { calculateHabitStreak } from '../utils/streakCalculator';
-import { CheckSquare, Square, Circle, CheckCircle2, ListTodo, Flame } from 'lucide-react';
+import { CheckSquare, Square, Circle, CheckCircle2, ListTodo } from 'lucide-react';
 import { PriorityLevel } from '../types';
 
 interface UnifiedPlanItem {
@@ -21,10 +21,8 @@ export const PlanMyDayView: React.FC = () => {
   const { tasks, habits, habitLogs, toggleTaskComplete, toggleHabitToday, setActiveView } = useTaskStore();
   const todayStr = getTodayString();
 
-  // Combine overdue tasks, today's tasks, today's habits
   const planItems: UnifiedPlanItem[] = [];
 
-  // 1. Overdue & today tasks
   tasks.forEach(t => {
     const overdue = isTaskOverdue(t.dueDate) && !t.completed;
     const dueToday = isTaskDueToday(t.dueDate);
@@ -42,7 +40,6 @@ export const PlanMyDayView: React.FC = () => {
     }
   });
 
-  // 2. Today's habits
   habits.forEach(h => {
     const { currentStreak, completedToday } = calculateHabitStreak(h.id, habitLogs);
     planItems.push({
@@ -56,7 +53,6 @@ export const PlanMyDayView: React.FC = () => {
     });
   });
 
-  // Sort: priority descending (urgent -> high -> medium -> low), then estimateMinutes descending
   const priorityWeight: Record<PriorityLevel, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
   planItems.sort((a, b) => {
     const diff = priorityWeight[b.priority] - priorityWeight[a.priority];
@@ -69,7 +65,7 @@ export const PlanMyDayView: React.FC = () => {
 
   const getPriorityDotColor = (p: PriorityLevel) => {
     switch (p) {
-      case 'urgent': return 'bg-[var(--urgent)]';
+      case 'urgent': return 'bg-[var(--urgent)] shadow-[0_0_8px_0_var(--urgent)]';
       case 'high': return 'bg-[var(--high)]';
       case 'medium': return 'bg-[var(--medium)]';
       case 'low': return 'bg-[var(--low)]';
@@ -90,14 +86,14 @@ export const PlanMyDayView: React.FC = () => {
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold font-display text-[var(--ink)]">Plan My Day</h1>
-        <p className="text-xs font-mono text-[var(--ink-soft)] mt-0.5">
+        <h1 className="text-3xl font-bold tracking-tight font-sans text-[var(--ink)]">Plan My Day</h1>
+        <p className="text-xs font-mono text-[var(--ink-soft)] mt-1">
           Unified ledger agenda — work through your high priority items & habits
         </p>
       </div>
 
       {totalItems > 0 && (
-        <div className="bg-white p-5 rounded-lg border border-[var(--border)] shadow-hairline space-y-2">
+        <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] shadow-card space-y-3">
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="font-semibold text-[var(--ink)]">Daily Progress Tally</span>
             <span className="text-[var(--accent)] font-bold">
@@ -110,7 +106,7 @@ export const PlanMyDayView: React.FC = () => {
 
       {/* Ledger Table */}
       {totalItems === 0 ? (
-        <div className="p-12 text-center bg-white rounded-lg border border-[var(--border)] space-y-3">
+        <div className="p-12 text-center bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-card space-y-3">
           <ListTodo className="w-10 h-10 text-[var(--ink-soft)]/40 mx-auto" />
           <p className="text-sm font-medium text-[var(--ink)]">Your plan for today is empty.</p>
           <p className="text-xs text-[var(--ink-soft)] font-mono max-w-sm mx-auto">
@@ -120,23 +116,23 @@ export const PlanMyDayView: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveView('today')}
-              className="px-3.5 py-1.5 rounded text-xs font-mono bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
+              className="px-4 py-2 rounded-full text-xs font-mono bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
             >
               Go to Today
             </button>
             <button
               type="button"
               onClick={() => setActiveView('inbox')}
-              className="px-3.5 py-1.5 rounded text-xs font-mono border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-colors"
+              className="px-4 py-2 rounded-full text-xs font-mono border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--surface-2)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
             >
               Check Inbox
             </button>
           </div>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border border-[var(--border)] overflow-hidden shadow-hairline">
+        <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] overflow-hidden shadow-card">
           {/* Table Header */}
-          <div className="grid grid-cols-[40px_1fr_90px_60px] items-center px-4 py-2.5 bg-[var(--surface-2)] border-b border-[var(--border)] text-[11px] font-mono text-[var(--ink-soft)] uppercase tracking-wider">
+          <div className="grid grid-cols-[40px_1fr_90px_60px] items-center px-5 py-3 bg-[var(--surface-2)] border-b border-[var(--border)] text-[11px] font-mono text-[var(--ink-soft)] uppercase tracking-wider">
             <div className="text-center">Pri</div>
             <div>Item Title & Type</div>
             <div className="text-right">Estimate</div>
@@ -157,14 +153,14 @@ export const PlanMyDayView: React.FC = () => {
               return (
                 <div
                   key={`${item.type}-${item.id}`}
-                  className={`grid grid-cols-[40px_1fr_90px_60px] items-center px-4 py-3 hover:bg-[var(--surface-2)]/50 transition-colors ${
+                  className={`grid grid-cols-[40px_1fr_90px_60px] items-center px-5 py-3.5 hover:bg-[var(--surface-2)]/50 transition-colors duration-150 ${
                     item.completed ? 'bg-[var(--surface-2)]/30' : ''
                   }`}
                 >
                   {/* Col 1: Priority Dot */}
                   <div className="flex justify-center">
                     <span
-                      className={`w-3 h-3 rounded-full ${getPriorityDotColor(item.priority)} ${
+                      className={`w-3.5 h-3.5 rounded-full ${getPriorityDotColor(item.priority)} ${
                         item.isOverdue ? 'ring-2 ring-[var(--urgent)]/50' : ''
                       }`}
                       title={`Priority ${item.priority}${item.isOverdue ? ' (Overdue)' : ''}`}
@@ -173,21 +169,21 @@ export const PlanMyDayView: React.FC = () => {
 
                   {/* Col 2: Title */}
                   <div className="min-w-0 pr-2">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span
-                        className={`text-sm font-medium leading-snug ${
+                        className={`text-sm font-medium font-sans leading-snug ${
                           item.completed ? 'line-through text-[var(--ink-soft)]' : 'text-[var(--ink)]'
                         }`}
                       >
                         {item.title}
                       </span>
                       {item.type === 'habit' && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 text-[10px] font-mono rounded bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono rounded-full bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20">
                           Habit
                         </span>
                       )}
                       {item.isOverdue && (
-                        <span className="inline-flex items-center px-1.5 py-0.2 text-[10px] font-mono rounded bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold">
+                        <span className="inline-flex items-center px-2 py-0.5 text-[10px] font-mono rounded-full bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold">
                           Overdue
                         </span>
                       )}
@@ -204,7 +200,7 @@ export const PlanMyDayView: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleToggle}
-                      className="p-1 rounded text-[var(--ink-soft)] hover:text-[var(--accent)] transition-colors"
+                      className="p-1 rounded-lg text-[var(--ink-soft)] hover:text-[var(--accent)] transition-all duration-150 active:scale-90"
                       aria-label={item.completed ? 'Mark incomplete' : 'Mark complete'}
                     >
                       {item.type === 'task' ? (

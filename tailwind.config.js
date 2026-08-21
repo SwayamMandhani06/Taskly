@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -20,6 +21,7 @@ export default {
         accent: {
           DEFAULT: "var(--accent)",
           hover: "var(--accent-hover)",
+          glow: "var(--accent-glow)",
         },
         priority: {
           urgent: "var(--urgent)",
@@ -33,13 +35,19 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Space Grotesk', 'sans-serif'],
-        mono: ['IBM Plex Mono', 'monospace'],
+        sans: ['Geist', 'Inter', '-apple-system', 'sans-serif'],
+        display: ['Geist', 'Inter', 'sans-serif'],
+        mono: ['Geist Mono', 'IBM Plex Mono', 'monospace'],
       },
       boxShadow: {
-        hairline: '0 1px 2px 0 rgba(30, 35, 32, 0.04)',
-        panel: '0 4px 20px -2px rgba(30, 35, 32, 0.06)',
+        hairline: 'var(--shadow-card)',
+        card: 'var(--shadow-card)',
+        hover: 'var(--shadow-hover)',
+        glow: '0 4px 14px 0 var(--accent-glow)',
+      },
+      borderRadius: {
+        '2xl': '1rem',
+        '3xl': '1.5rem',
       }
     },
   },

@@ -5,7 +5,7 @@ import { PriorityBadge } from '../common/PriorityBadge';
 import { SubtaskBuilder } from './SubtaskBuilder';
 import { getTodayString, getTomorrowString, getNextWeekString } from '../../utils/dateHelpers';
 import { getCategoryColor } from '../../utils/categoryColors';
-import { X, Calendar, Clock, ChevronDown, ChevronUp, AlertCircle, Trash2 } from 'lucide-react';
+import { X, Calendar, Clock, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 
 export const TaskEditorModal: React.FC = () => {
   const {
@@ -21,7 +21,6 @@ export const TaskEditorModal: React.FC = () => {
 
   const titleInputRef = useRef<HTMLInputElement>(null);
 
-  // Form states
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [showNotes, setShowNotes] = useState(false);
@@ -35,12 +34,10 @@ export const TaskEditorModal: React.FC = () => {
 
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  // Existing categories for autocomplete
   const existingCategories = Array.from(
     new Set(tasks.map(t => t.category).filter(Boolean) as string[])
   );
 
-  // Load editing task data or set defaults
   useEffect(() => {
     if (isEditorOpen) {
       if (editingTaskId) {
@@ -58,7 +55,6 @@ export const TaskEditorModal: React.FC = () => {
           setSubtasks(existing.subtasks || []);
         }
       } else {
-        // Create mode defaults
         setTitle('');
         setNotes('');
         setShowNotes(false);
@@ -72,14 +68,12 @@ export const TaskEditorModal: React.FC = () => {
       }
       setConfirmDelete(false);
 
-      // Focus title after mount
       setTimeout(() => {
         titleInputRef.current?.focus();
       }, 50);
     }
   }, [isEditorOpen, editingTaskId, editorInitialDate, tasks]);
 
-  // Handle ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isEditorOpen) {
@@ -131,21 +125,21 @@ export const TaskEditorModal: React.FC = () => {
   const categoryColor = getCategoryColor(category);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs flex justify-end">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black/50 backdrop-blur-xs flex justify-end">
       <div
-        className="w-full max-w-xl bg-white h-full shadow-2xl flex flex-col border-l border-[var(--border)] animate-in slide-in-from-right duration-200"
+        className="w-full max-w-xl bg-[var(--surface)] h-full shadow-2xl flex flex-col border-l border-[var(--border)] animate-in slide-in-from-right duration-200"
         role="dialog"
         aria-labelledby="modal-title"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-between">
-          <h2 id="modal-title" className="text-base font-semibold font-display text-[var(--ink)]">
+          <h2 id="modal-title" className="text-base font-bold font-sans tracking-tight text-[var(--ink)]">
             {editingTaskId ? 'Edit Task' : 'New Task'}
           </h2>
           <button
             type="button"
             onClick={closeTaskModal}
-            className="p-1 rounded-md text-[var(--ink-soft)] hover:bg-black/5 hover:text-[var(--ink)] transition-colors"
+            className="p-2 rounded-full text-[var(--ink-soft)] hover:bg-black/5 dark:hover:bg-white/10 hover:text-[var(--ink)] transition-all active:scale-95"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />
@@ -156,7 +150,7 @@ export const TaskEditorModal: React.FC = () => {
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* 1. Title */}
           <div>
-            <label className="block text-xs font-mono text-[var(--ink-soft)] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-mono text-[var(--ink-soft)] uppercase tracking-wider mb-1.5">
               Title *
             </label>
             <input
@@ -166,13 +160,13 @@ export const TaskEditorModal: React.FC = () => {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="What needs to be done?"
-              className="w-full px-3.5 py-2.5 rounded-md border border-[var(--border)] bg-white text-sm font-medium text-[var(--ink)] placeholder-[var(--ink-soft)]/60 focus:border-[var(--accent)]"
+              className="w-full px-4 py-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] text-sm font-medium text-[var(--ink)] placeholder-[var(--ink-soft)]/60 focus:bg-[var(--surface)] focus:border-[var(--accent)] transition-colors"
             />
           </div>
 
           {/* 2. Notes */}
           <div>
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-mono text-[var(--ink-soft)] uppercase tracking-wider">
                 Notes
               </label>
@@ -191,7 +185,7 @@ export const TaskEditorModal: React.FC = () => {
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Context, links, details..."
                 rows={3}
-                className="w-full px-3.5 py-2 rounded-md border border-[var(--border)] text-sm text-[var(--ink)] focus:border-[var(--accent)] resize-y"
+                className="w-full px-4 py-2.5 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] text-sm text-[var(--ink)] focus:bg-[var(--surface)] focus:border-[var(--accent)] resize-y transition-colors"
               />
             )}
           </div>
@@ -224,9 +218,9 @@ export const TaskEditorModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDueDate(getTodayString())}
-                className={`px-2.5 py-1 rounded border transition-colors ${
+                className={`px-3 py-1 rounded-full border transition-all active:scale-95 ${
                   dueDate === getTodayString()
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm font-semibold'
                     : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
                 }`}
               >
@@ -235,9 +229,9 @@ export const TaskEditorModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDueDate(getTomorrowString())}
-                className={`px-2.5 py-1 rounded border transition-colors ${
+                className={`px-3 py-1 rounded-full border transition-all active:scale-95 ${
                   dueDate === getTomorrowString()
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm font-semibold'
                     : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
                 }`}
               >
@@ -246,9 +240,9 @@ export const TaskEditorModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDueDate(getNextWeekString())}
-                className={`px-2.5 py-1 rounded border transition-colors ${
+                className={`px-3 py-1 rounded-full border transition-all active:scale-95 ${
                   dueDate === getNextWeekString()
-                    ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                    ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm font-semibold'
                     : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
                 }`}
               >
@@ -261,7 +255,7 @@ export const TaskEditorModal: React.FC = () => {
                     setDueDate('');
                     setDueTime('');
                   }}
-                  className="px-2.5 py-1 rounded border border-[var(--border)] text-[var(--ink-soft)] hover:bg-[var(--surface-2)] hover:text-[var(--urgent)]"
+                  className="px-3 py-1 rounded-full border border-[var(--border)] text-[var(--ink-soft)] hover:bg-[var(--surface-2)] hover:text-[var(--urgent)] transition-all active:scale-95"
                 >
                   Clear Date
                 </button>
@@ -270,27 +264,27 @@ export const TaskEditorModal: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3 pt-1">
               <div className="relative">
-                <Calendar className="w-4 h-4 absolute left-3 top-2.5 text-[var(--ink-soft)]" />
+                <Calendar className="w-4 h-4 absolute left-3.5 top-3 text-[var(--ink-soft)]" />
                 <input
                   type="date"
                   value={dueDate}
                   onChange={e => setDueDate(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 rounded-md border border-[var(--border)] text-xs font-mono bg-white text-[var(--ink)]"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-2xl border border-[var(--border)] text-xs font-mono bg-[var(--surface-2)] text-[var(--ink)] focus:bg-[var(--surface)]"
                 />
               </div>
 
               {dueDate ? (
                 <div className="relative">
-                  <Clock className="w-4 h-4 absolute left-3 top-2.5 text-[var(--ink-soft)]" />
+                  <Clock className="w-4 h-4 absolute left-3.5 top-3 text-[var(--ink-soft)]" />
                   <input
                     type="time"
                     value={dueTime}
                     onChange={e => setDueTime(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 rounded-md border border-[var(--border)] text-xs font-mono bg-white text-[var(--ink)]"
+                    className="w-full pl-10 pr-3 py-2.5 rounded-2xl border border-[var(--border)] text-xs font-mono bg-[var(--surface-2)] text-[var(--ink)] focus:bg-[var(--surface)]"
                   />
                 </div>
               ) : (
-                <div className="flex items-center px-3 py-2 text-xs font-mono text-[var(--ink-soft)]/50 italic bg-[var(--surface-2)] rounded-md border border-[var(--border)]">
+                <div className="flex items-center px-3.5 py-2.5 text-xs font-mono text-[var(--ink-soft)]/50 italic bg-[var(--surface-2)] rounded-2xl border border-[var(--border)]">
                   Pick date first for time
                 </div>
               )}
@@ -299,14 +293,14 @@ export const TaskEditorModal: React.FC = () => {
 
           {/* 5. Category */}
           <div>
-            <label className="block text-xs font-mono text-[var(--ink-soft)] uppercase tracking-wider mb-1">
+            <label className="block text-xs font-mono text-[var(--ink-soft)] uppercase tracking-wider mb-1.5">
               Category
             </label>
             <div className="relative">
               <div className="flex items-center">
                 {category.trim() && (
                   <span
-                    className="w-2.5 h-2.5 rounded-full absolute left-3 shrink-0"
+                    className="w-2.5 h-2.5 rounded-full absolute left-3.5 shrink-0"
                     style={{ backgroundColor: categoryColor.dot }}
                   />
                 )}
@@ -316,8 +310,8 @@ export const TaskEditorModal: React.FC = () => {
                   onChange={e => setCategory(e.target.value)}
                   list="category-suggestions"
                   placeholder="e.g. Work, Personal, Health..."
-                  className={`w-full py-2 pr-3 rounded-md border border-[var(--border)] text-xs font-mono bg-white text-[var(--ink)] ${
-                    category.trim() ? 'pl-8' : 'px-3'
+                  className={`w-full py-2.5 pr-4 rounded-2xl border border-[var(--border)] text-xs font-mono bg-[var(--surface-2)] text-[var(--ink)] focus:bg-[var(--surface)] ${
+                    category.trim() ? 'pl-9' : 'px-4'
                   }`}
                 />
                 <datalist id="category-suggestions">
@@ -342,17 +336,17 @@ export const TaskEditorModal: React.FC = () => {
                 value={estimateMinutes || ''}
                 onChange={e => setEstimateMinutes(e.target.value ? Number(e.target.value) : undefined)}
                 placeholder="e.g. 30"
-                className="w-28 px-3 py-1.5 rounded-md border border-[var(--border)] text-xs font-mono text-[var(--ink)] bg-white"
+                className="w-28 px-3.5 py-2 rounded-2xl border border-[var(--border)] text-xs font-mono text-[var(--ink)] bg-[var(--surface-2)] focus:bg-[var(--surface)]"
               />
-              <div className="flex flex-wrap gap-1 text-xs font-mono">
+              <div className="flex flex-wrap gap-1.5 text-xs font-mono">
                 {[15, 30, 45, 60, 90, 120].map(mins => (
                   <button
                     key={mins}
                     type="button"
                     onClick={() => setEstimateMinutes(mins)}
-                    className={`px-2 py-1 rounded border transition-colors ${
+                    className={`px-3 py-1 rounded-full border transition-all active:scale-95 ${
                       estimateMinutes === mins
-                        ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                        ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-sm font-semibold'
                         : 'bg-[var(--surface-2)] border-[var(--border)] text-[var(--ink-soft)] hover:text-[var(--ink)]'
                     }`}
                   >
@@ -368,15 +362,15 @@ export const TaskEditorModal: React.FC = () => {
             <label className="block text-xs font-mono text-[var(--ink-soft)] uppercase tracking-wider mb-2">
               Recurring Schedule
             </label>
-            <div className="grid grid-cols-4 gap-1.5 p-1 bg-[var(--surface-2)] rounded-md border border-[var(--border)] text-xs font-mono">
+            <div className="grid grid-cols-4 gap-1.5 p-1 bg-[var(--surface-2)] rounded-full border border-[var(--border)] text-xs font-mono">
               {(['none', 'daily', 'weekly', 'monthly'] as RecurringInterval[]).map(r => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRecurring(r)}
-                  className={`py-1.5 rounded text-center transition-all capitalize ${
+                  className={`py-1.5 rounded-full text-center transition-all duration-150 capitalize ${
                     recurring === r
-                      ? 'bg-white text-[var(--ink)] shadow-xs font-semibold'
+                      ? 'bg-[var(--surface)] text-[var(--ink)] shadow-xs font-semibold'
                       : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
                   }`}
                 >
@@ -395,7 +389,7 @@ export const TaskEditorModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleDelete}
-                className={`text-xs font-mono transition-colors flex items-center gap-1.5 px-3 py-2 rounded ${
+                className={`text-xs font-mono transition-all duration-150 flex items-center gap-1.5 px-4 py-2 rounded-full active:scale-95 ${
                   confirmDelete
                     ? 'bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold'
                     : 'text-[var(--urgent)] hover:bg-[var(--urgent-soft)]'
@@ -412,13 +406,13 @@ export const TaskEditorModal: React.FC = () => {
               <button
                 type="button"
                 onClick={closeTaskModal}
-                className="px-4 py-2 text-xs font-mono rounded border border-[var(--border)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors"
+                className="px-5 py-2.5 text-xs font-mono rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-all active:scale-95"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 text-xs font-mono font-medium rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-xs transition-colors"
+                className="px-6 py-2.5 text-xs font-mono font-medium rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-glow transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
               >
                 Save Task
               </button>
