@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #ECEEE8;
+  --surface: #FFFFFF;
+  --surface-2: #F5F6F0;
+  --ink: #1E2320;
+  --ink-soft: #6B716B;
+  --border: #DCDFD5;
+  --accent: #4B4FE0;
+  --accent-hover: #383CC0;
+
+  /* Priority scale */
+  --urgent: #E0483E;
+  --urgent-soft: #FCEBEA;
+  --high: #E8963C;
+  --high-soft: #FDF4E7;
+  --medium: #D9A62E;
+  --medium-soft: #FAF5E5;
+  --low: #4FA876;
+  --low-soft: #EEF7F2;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  /* Accessible focus indicators across interactive elements */
+  button, input, select, textarea, a, [role="button"], [tabindex="0"] {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg)];
+  }
+}
+
+/* Custom scrollbars matching ledger style */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #C4C8BA;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A6AAA0;
+}

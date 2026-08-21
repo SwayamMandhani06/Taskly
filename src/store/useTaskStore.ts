@@ -1,0 +1,400 @@
+import { create } from 'zustand';
+import { db } from '../db/database';
+import { Task, Habit, HabitLogEntry, ViewMode, ToastMessage } from '../types';
+import { getTodayString, calculateNextDueDate } from '../utils/dateHelpers';
+
+interface TaskStore {
+  tasks: Task[];
+  habits: Habit[];
+  habitLogs: HabitLogEntry[];
+  initialized: boolean;
+  activeView: ViewMode;
+  
+  // UI state
+  isEditorOpen: boolean;
+  editingTaskId: string | null;
+  editorInitialDate?: string;
+
+  isHabitEditorOpen: boolean;
+  editingHabitId: string | null;
+
+  toasts: ToastMessage[];
+
+  // Database initialization & load
+  loadData: () => Promise<void>;
+
+  // Navigation
+  setActiveView: (view: ViewMode) => void;
+
+  // Task Actions
+  addTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'completed'>) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  toggleTaskComplete: (id: string) => Promise<void>;
+
+  // Habit Actions
+  addHabit: (habitData: Omit<Habit, 'id' | 'createdAt'>) => Promise<void>;
+  updateHabit: (id: string, updates: Partial<Habit>) => Promise<void>;
+  deleteHabit: (id: string) => Promise<void>;
+  toggleHabitToday: (habitId: string, dateStr?: string) => Promise<void>;
+
+  // UI modal actions
+  openCreateTaskModal: (initialDate?: string) => void;
+  openEditTaskModal: (taskId: string) => void;
+  closeTaskModal: () => void;
+
+  openCreateHabitModal: () => void;
+  openEditHabitModal: (habitId: string) => void;
+  closeHabitModal: () => void;
+
+  // Toast notification system
+  addToast: (type: 'info' | 'success' | 'error', message: string) => void;
+  removeToast: (id: string) => void;
+}
+
+export const useTaskStore = create<TaskStore>((set, get) => ({
+  tasks: [],
+  habits: [],
+  habitLogs: [],
+  initialized: false,
+  activeView: 'today',
+  
+  isEditorOpen: false,
+  editingTaskId: null,
+  editorInitialDate: undefined,
+
+  isHabitEditorOpen: false,
+  editingHabitId: null,
+
+  toasts: [],
+
+  loadData: async () => {
+    try {
+      let tasks = await db.tasks.toArray();
+      let habits = await db.habits.toArray();
+      let habitLogs = await db.habitLogs.toArray();
+
+      // Seed initial data if database is empty
+      if (tasks.length === 0 && habits.length === 0) {
+        const today = getTodayString();
+        
+        const seedTasks: Task[] = [
+          {
+            id: 'task-1',
+            title: 'Review quarterly goals & project milestones',
+            notes: 'Check progress against annual metrics and re-align team priorities.',
+            priority: 'urgent',
+            dueDate: today,
+            dueTime: '09:30',
+            category: 'Work',
+            subtasks: [
+              { id: 'st-1', text: 'Audit completed deliverables', done: true },
+              { id: 'st-2', text: 'Draft summary report', done: false },
+            ],
+            recurring: 'weekly',
+            estimateMinutes: 45,
+            completed: false,
+            createdAt: Date.now() - 3600000,
+          },
+          {
+            id: 'task-2',
+            title: 'Read 2 chapters of System Design Interview',
+            notes: 'Focus on distributed caching and load balancing strategies.',
+            priority: 'high',
+            dueDate: today,
+            dueTime: '17:00',
+            category: 'Learning',
+            subtasks: [],
+            recurring: 'daily',
+            estimateMinutes: 60,
+            completed: false,
+            createdAt: Date.now() - 7200000,
+          },
+          {
+            id: 'task-3',
+            title: 'Schedule dentist checkup & hygiene appointment',
+            priority: 'medium',
+            category: 'Personal',
+            subtasks: [],
+            recurring: 'none',
+            estimateMinutes: 15,
+            completed: false,
+            createdAt: Date.now() - 86400000,
+          },
+          {
+            id: 'task-4',
+            title: 'Refactor state persistence layer for offline mode',
+            priority: 'urgent',
+            dueDate: '2026-08-20', // Overdue example
+            category: 'Development',
+            subtasks: [
+              { id: 'st-3', text: 'Configure Dexie schema', done: true },
+              { id: 'st-4', text: 'Add sync handlers', done: false }
+            ],
+            recurring: 'none',
+            estimateMinutes: 90,
+            completed: false,
+            createdAt: Date.now() - 172800000,
+          }
+        ];
+
+        const seedHabits: Habit[] = [
+          {
+            id: 'habit-1',
+            title: 'Morning Deep Work (90 mins)',
+            category: 'Productivity',
+            priority: 'urgent',
+            estimateMinutes: 90,
+            createdAt: Date.now(),
+          },
+          {
+            id: 'habit-2',
+            title: 'Daily Walk & Sun Exposure',
+            category: 'Health',
+            priority: 'medium',
+            estimateMinutes: 30,
+            createdAt: Date.now(),
+          },
+          {
+            id: 'habit-3',
+            title: 'Nightly Ledger Review & Plan Tomorrow',
+            category: 'Personal',
+            priority: 'high',
+            estimateMinutes: 15,
+            createdAt: Date.now(),
+          }
+        ];
+
+        // Seed initial habit log for past 2 days to demonstrate streak calculation
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+        const seedLogs: HabitLogEntry[] = [
+          {
+            date: yesterdayStr,
+            completedHabits: {
+              'habit-1': true,
+              'habit-2': true,
+            }
+          }
+        ];
+
+        await db.tasks.bulkAdd(seedTasks);
+        await db.habits.bulkAdd(seedHabits);
+        await db.habitLogs.bulkAdd(seedLogs);
+
+        tasks = seedTasks;
+        habits = seedHabits;
+        habitLogs = seedLogs;
+      }
+
+      set({ tasks, habits, habitLogs, initialized: true });
+    } catch (err) {
+      console.error('Failed to load data from IndexedDB', err);
+      get().addToast('error', 'Failed to load local database.');
+    }
+  },
+
+  setActiveView: (view: ViewMode) => set({ activeView: view }),
+
+  addTask: async (taskData) => {
+    const newTask: Task = {
+      ...taskData,
+      id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      completed: false,
+      createdAt: Date.now(),
+    };
+
+    try {
+      await db.tasks.add(newTask);
+      set(state => ({ tasks: [newTask, ...state.tasks] }));
+      get().addToast('success', `Created task "${newTask.title.slice(0, 24)}${newTask.title.length > 24 ? '...' : ''}"`);
+    } catch (err) {
+      console.error('Failed to add task', err);
+      get().addToast('error', 'Error creating task.');
+    }
+  },
+
+  updateTask: async (id, updates) => {
+    try {
+      await db.tasks.update(id, updates);
+      set(state => ({
+        tasks: state.tasks.map(t => (t.id === id ? { ...t, ...updates } : t))
+      }));
+      get().addToast('info', 'Task updated.');
+    } catch (err) {
+      console.error('Failed to update task', err);
+      get().addToast('error', 'Error updating task.');
+    }
+  },
+
+  deleteTask: async (id) => {
+    try {
+      await db.tasks.delete(id);
+      set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
+      get().addToast('info', 'Task deleted.');
+    } catch (err) {
+      console.error('Failed to delete task', err);
+      get().addToast('error', 'Error deleting task.');
+    }
+  },
+
+  toggleTaskComplete: async (id) => {
+    const { tasks } = get();
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const willBeCompleted = !task.completed;
+
+    if (willBeCompleted && task.recurring !== 'none') {
+      // Mark current instance as completed
+      const updatedCurrent: Task = {
+        ...task,
+        completed: true,
+        completedAt: Date.now(),
+      };
+
+      // Create new recurring instance with advanced date
+      const nextDueDate = calculateNextDueDate(task.dueDate, task.recurring);
+      const newRecurringTask: Task = {
+        ...task,
+        id: `task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        dueDate: nextDueDate,
+        completed: false,
+        completedAt: undefined,
+        createdAt: Date.now(),
+        // Reset subtasks for next instance
+        subtasks: task.subtasks.map(st => ({ ...st, done: false })),
+      };
+
+      try {
+        await db.tasks.update(id, { completed: true, completedAt: Date.now() });
+        await db.tasks.add(newRecurringTask);
+
+        set(state => ({
+          tasks: [
+            newRecurringTask,
+            ...state.tasks.map(t => (t.id === id ? updatedCurrent : t))
+          ]
+        }));
+        get().addToast('success', `Completed task & scheduled next for ${nextDueDate}`);
+      } catch (err) {
+        console.error('Failed recurring task toggle', err);
+        get().addToast('error', 'Error processing recurring task.');
+      }
+    } else {
+      const updates = {
+        completed: willBeCompleted,
+        completedAt: willBeCompleted ? Date.now() : undefined,
+      };
+
+      try {
+        await db.tasks.update(id, updates);
+        set(state => ({
+          tasks: state.tasks.map(t => (t.id === id ? { ...t, ...updates } : t))
+        }));
+      } catch (err) {
+        console.error('Failed to toggle task', err);
+        get().addToast('error', 'Error toggling task completion.');
+      }
+    }
+  },
+
+  // Habits
+  addHabit: async (habitData) => {
+    const newHabit: Habit = {
+      ...habitData,
+      id: `habit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: Date.now(),
+    };
+
+    try {
+      await db.habits.add(newHabit);
+      set(state => ({ habits: [newHabit, ...state.habits] }));
+      get().addToast('success', `Added habit "${newHabit.title}"`);
+    } catch (err) {
+      console.error('Failed to add habit', err);
+      get().addToast('error', 'Error creating habit.');
+    }
+  },
+
+  updateHabit: async (id, updates) => {
+    try {
+      await db.habits.update(id, updates);
+      set(state => ({
+        habits: state.habits.map(h => (h.id === id ? { ...h, ...updates } : h))
+      }));
+      get().addToast('info', 'Habit updated.');
+    } catch (err) {
+      console.error('Failed to update habit', err);
+      get().addToast('error', 'Error updating habit.');
+    }
+  },
+
+  deleteHabit: async (id) => {
+    try {
+      await db.habits.delete(id);
+      set(state => ({ habits: state.habits.filter(h => h.id !== id) }));
+      get().addToast('info', 'Habit deleted.');
+    } catch (err) {
+      console.error('Failed to delete habit', err);
+      get().addToast('error', 'Error deleting habit.');
+    }
+  },
+
+  toggleHabitToday: async (habitId, dateStr) => {
+    const targetDate = dateStr || getTodayString();
+    const { habitLogs } = get();
+
+    const existingLog = habitLogs.find(l => l.date === targetDate);
+    let updatedCompleted: Record<string, boolean> = {};
+
+    if (existingLog) {
+      updatedCompleted = {
+        ...existingLog.completedHabits,
+        [habitId]: !existingLog.completedHabits?.[habitId],
+      };
+    } else {
+      updatedCompleted = { [habitId]: true };
+    }
+
+    try {
+      await db.habitLogs.put({
+        date: targetDate,
+        completedHabits: updatedCompleted,
+      });
+
+      const updatedLogs = habitLogs.some(l => l.date === targetDate)
+        ? habitLogs.map(l => (l.date === targetDate ? { ...l, completedHabits: updatedCompleted } : l))
+        : [...habitLogs, { date: targetDate, completedHabits: updatedCompleted }];
+
+      set({ habitLogs: updatedLogs });
+    } catch (err) {
+      console.error('Failed to toggle habit', err);
+      get().addToast('error', 'Error updating habit log.');
+    }
+  },
+
+  // Modal UI Controls
+  openCreateTaskModal: (initialDate) => set({ isEditorOpen: true, editingTaskId: null, editorInitialDate: initialDate }),
+  openEditTaskModal: (taskId) => set({ isEditorOpen: true, editingTaskId: taskId, editorInitialDate: undefined }),
+  closeTaskModal: () => set({ isEditorOpen: false, editingTaskId: null, editorInitialDate: undefined }),
+
+  openCreateHabitModal: () => set({ isHabitEditorOpen: true, editingHabitId: null }),
+  openEditHabitModal: (habitId) => set({ isHabitEditorOpen: true, editingHabitId: habitId }),
+  closeHabitModal: () => set({ isHabitEditorOpen: false, editingHabitId: null }),
+
+  // Toasts
+  addToast: (type, message) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    set(state => ({ toasts: [...state.toasts, { id, type, message }] }));
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+      get().removeToast(id);
+    }, 3200);
+  },
+
+  removeToast: (id) => set(state => ({ toasts: state.toasts.filter(t => t.id !== id) })),
+}));
