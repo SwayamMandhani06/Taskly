@@ -2,6 +2,7 @@ import React from 'react';
 import { useTaskStore } from '../../store/useTaskStore';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
+import { ThemeToggle } from './ThemeToggle';
 import { TodayView } from '../../views/TodayView';
 import { UpcomingView } from '../../views/UpcomingView';
 import { InboxView } from '../../views/InboxView';
@@ -72,8 +73,8 @@ export const AppShell: React.FC = () => {
       <Sidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 overflow-y-auto mb-20 md:mb-0 max-w-full">
-        {/* Top Header Row for Mobile & Debug Toggle */}
+      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 overflow-y-auto pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-8 max-w-full">
+        {/* Top Header Row for Mobile */}
         <header className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--border)] md:hidden">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
@@ -85,21 +86,26 @@ export const AppShell: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Mobile Theme Toggle */}
+            <ThemeToggle compact={true} />
+
+            {/* Mobile Lock Button */}
             {isLockEnabled && (
               <button
                 type="button"
                 onClick={lockApp}
                 aria-label="Lock app"
-                className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] active:scale-95"
+                className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] active:scale-95 flex items-center justify-center min-w-[36px] min-h-[36px]"
               >
                 <Lock className="w-4 h-4" />
               </button>
             )}
 
+            {/* Mobile Debug Toggle */}
             <button
               type="button"
               onClick={() => setShowDebug(!showDebug)}
-              className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] text-xs font-mono active:scale-95"
+              className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] text-xs font-mono active:scale-95 flex items-center justify-center min-w-[36px] min-h-[36px]"
               aria-label="Toggle debug panel"
             >
               <Bug className="w-4 h-4" />
@@ -111,14 +117,14 @@ export const AppShell: React.FC = () => {
         {renderActiveView()}
       </main>
 
-      {/* Floating Action Button (FAB) on Mobile */}
+      {/* Floating Action Button (FAB) on Mobile — Safe above tab bar & notch */}
       <button
         type="button"
         onClick={() => openCreateTaskModal()}
         aria-label="Create new task"
-        className="md:hidden fixed right-5 bottom-20 z-40 w-14 h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-glow active:scale-95 transition-transform"
+        className="md:hidden fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-50 w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-glow active:scale-95 transition-transform"
       >
-        <Plus className="w-7 h-7" />
+        <Plus className="w-6 h-6 sm:w-7 sm:h-7" />
       </button>
 
       {/* Desktop Debug Toggle in Bottom Corner */}

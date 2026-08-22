@@ -54,7 +54,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
       tabIndex={0}
       role="button"
       aria-label={`Task ${task.title}, priority ${task.priority}${task.completed ? ', completed' : ''}`}
-      className={`group relative flex items-center gap-3.5 p-4 rounded-2xl border transition-all duration-200 ease-out cursor-pointer bg-[var(--surface)] hover:border-[var(--accent)] hover:shadow-hover hover:-translate-y-0.5 active:scale-[0.99] ${
+      className={`group relative flex items-center gap-2.5 sm:gap-3.5 p-3.5 sm:p-4 rounded-2xl border transition-all duration-200 ease-out cursor-pointer bg-[var(--surface)] hover:border-[var(--accent)] hover:shadow-hover hover:-translate-y-0.5 active:scale-[0.99] max-w-full overflow-hidden ${
         task.completed ? 'opacity-55 bg-[var(--surface-2)]/60 border-[var(--border)]' : 'border-[var(--border)] shadow-card'
       }`}
     >
@@ -66,7 +66,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
         type="button"
         onClick={handleCheckboxClick}
         aria-label={task.completed ? 'Mark task incomplete' : 'Mark task complete'}
-        className="p-1 rounded-lg text-[var(--ink-soft)] hover:text-[var(--accent)] transition-all duration-150 active:scale-90 shrink-0"
+        className="p-1 rounded-lg text-[var(--ink-soft)] hover:text-[var(--accent)] transition-all duration-150 active:scale-90 shrink-0 min-w-[28px] min-h-[28px] flex items-center justify-center"
       >
         {task.completed ? (
           <CheckSquare className="w-5 h-5 text-[var(--accent)]" />
@@ -77,9 +77,9 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
 
       {/* Content */}
       <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
           <span
-            className={`text-sm font-medium font-sans leading-snug break-words transition-all duration-200 ${
+            className={`text-xs sm:text-sm font-medium font-sans leading-snug break-words min-w-0 flex-1 ${
               task.completed ? 'line-through text-[var(--ink-soft)]' : 'text-[var(--ink)]'
             }`}
           >
@@ -89,7 +89,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
         </div>
 
         {/* Details row: due date, subtasks count, estimate, recurring */}
-        <div className="flex items-center gap-3 flex-wrap text-xs text-[var(--ink-soft)] font-mono">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-[11px] sm:text-xs text-[var(--ink-soft)] font-mono">
           {task.dueDate && (
             <MonospaceTag variant={isOverdue ? 'urgent' : 'default'} icon={<Clock className="w-3.5 h-3.5" />}>
               {formatDueDateDisplay(task.dueDate, task.dueTime)}
@@ -107,14 +107,14 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
           )}
 
           {task.recurring !== 'none' && (
-            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--accent)] capitalize">
+            <span className="inline-flex items-center gap-1 font-mono text-[11px] text-[var(--accent)] capitalize shrink-0">
               <Repeat className="w-3 h-3" />
               <span>{task.recurring}</span>
             </span>
           )}
 
           {task.notes && (
-            <span title="Has notes" className="inline-flex items-center">
+            <span title="Has notes" className="inline-flex items-center shrink-0">
               <FileText className="w-3.5 h-3.5 text-[var(--ink-soft)] opacity-70" />
             </span>
           )}

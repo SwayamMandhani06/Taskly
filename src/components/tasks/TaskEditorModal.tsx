@@ -380,45 +380,46 @@ export const TaskEditorModal: React.FC = () => {
             </div>
           </div>
 
-          {/* 8. Subtasks */}
+          {/* Subtasks */}
           <SubtaskBuilder subtasks={subtasks} onChange={setSubtasks} />
-
-          {/* Submit & Footer Actions */}
-          <div className="pt-6 border-t border-[var(--border)] flex items-center justify-between">
-            {editingTaskId ? (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className={`text-xs font-mono transition-all duration-150 flex items-center gap-1.5 px-4 py-2 rounded-full active:scale-95 ${
-                  confirmDelete
-                    ? 'bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold'
-                    : 'text-[var(--urgent)] hover:bg-[var(--urgent-soft)]'
-                }`}
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>{confirmDelete ? 'Click to Confirm Delete' : 'Delete Task'}</span>
-              </button>
-            ) : (
-              <div />
-            )}
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={closeTaskModal}
-                className="px-5 py-2.5 text-xs font-mono rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-all active:scale-95"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-2.5 text-xs font-mono font-medium rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-glow transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
-              >
-                Save Task
-              </button>
-            </div>
-          </div>
         </form>
+
+        {/* Submit & Footer Actions — Sticky bottom bar safe from virtual keyboards */}
+        <div className="sticky bottom-0 bg-[var(--surface)] px-6 py-4 border-t border-[var(--border)] flex items-center justify-between shadow-panel z-20 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {editingTaskId ? (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className={`text-xs font-mono transition-all duration-150 flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-full active:scale-95 ${
+                confirmDelete
+                  ? 'bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold'
+                  : 'text-[var(--urgent)] hover:bg-[var(--urgent-soft)]'
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{confirmDelete ? 'Confirm' : 'Delete'}</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <button
+              type="button"
+              onClick={closeTaskModal}
+              className="px-4 sm:px-5 py-2.5 text-xs font-mono rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-all active:scale-95"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="px-5 sm:px-6 py-2.5 text-xs font-mono font-medium rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-glow transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97]"
+            >
+              Save Task
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

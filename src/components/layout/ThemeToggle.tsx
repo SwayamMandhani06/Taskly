@@ -2,9 +2,31 @@ import React from 'react';
 import { useTaskStore } from '../../store/useTaskStore';
 import { Sun, Moon } from 'lucide-react';
 
-export const ThemeToggle: React.FC = () => {
+interface ThemeToggleProps {
+  compact?: boolean;
+}
+
+export const ThemeToggle: React.FC<ThemeToggleProps> = ({ compact = false }) => {
   const { theme, toggleTheme } = useTaskStore();
   const isDark = theme === 'dark';
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+        title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+        className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--accent)] hover:border-[var(--accent)] active:scale-95 transition-all flex items-center justify-center shrink-0 min-w-[36px] min-h-[36px]"
+      >
+        {isDark ? (
+          <Moon className="w-4 h-4 text-[var(--accent)]" />
+        ) : (
+          <Sun className="w-4 h-4 text-[var(--high)]" />
+        )}
+      </button>
+    );
+  }
 
   return (
     <button

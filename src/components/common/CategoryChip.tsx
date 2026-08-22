@@ -18,15 +18,16 @@ export const CategoryChip: React.FC<CategoryChipProps> = ({ category, size = 'sm
         color: color.text,
         borderColor: color.border,
       }}
-      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border font-mono text-xs ${
+      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border font-mono shrink-0 max-w-[120px] sm:max-w-none ${
         size === 'sm' ? 'text-[11px]' : 'text-xs px-2.5 py-1'
       }`}
+      title={category}
     >
       <span
         className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{ backgroundColor: color.dot }}
       />
-      <span>{category}</span>
+      <span className="truncate">{category}</span>
     </span>
   );
 };

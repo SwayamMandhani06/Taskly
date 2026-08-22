@@ -204,42 +204,44 @@ export const HabitEditorModal: React.FC = () => {
               </div>
             </div>
           </div>
-
-          <div className="pt-6 border-t border-[var(--border)] flex items-center justify-between">
-            {editingHabitId ? (
-              <button
-                type="button"
-                onClick={handleDelete}
-                className={`text-xs font-mono transition-colors flex items-center gap-1.5 px-3 py-2 rounded ${
-                  confirmDelete
-                    ? 'bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold'
-                    : 'text-[var(--urgent)] hover:bg-[var(--urgent-soft)]'
-                }`}
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>{confirmDelete ? 'Confirm Delete' : 'Delete Habit'}</span>
-              </button>
-            ) : (
-              <div />
-            )}
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={closeHabitModal}
-                className="px-4 py-2 text-xs font-mono rounded border border-[var(--border)] bg-white text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2 text-xs font-mono font-medium rounded bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors"
-              >
-                Save Habit
-              </button>
-            </div>
-          </div>
         </form>
+
+        {/* Submit & Footer Actions */}
+        <div className="sticky bottom-0 bg-[var(--surface)] px-6 py-4 border-t border-[var(--border)] flex items-center justify-between shadow-panel z-20 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+          {editingHabitId ? (
+            <button
+              type="button"
+              onClick={handleDelete}
+              className={`text-xs font-mono transition-colors flex items-center gap-1.5 px-3 py-2 rounded-full ${
+                confirmDelete
+                  ? 'bg-[var(--urgent-soft)] text-[var(--urgent)] font-semibold'
+                  : 'text-[var(--urgent)] hover:bg-[var(--urgent-soft)]'
+              }`}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>{confirmDelete ? 'Confirm' : 'Delete'}</span>
+            </button>
+          ) : (
+            <div />
+          )}
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={closeHabitModal}
+              className="px-4 py-2 text-xs font-mono rounded-full border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink-soft)] hover:text-[var(--ink)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="px-5 py-2 text-xs font-mono font-medium rounded-full bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors shadow-glow"
+            >
+              Save Habit
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
