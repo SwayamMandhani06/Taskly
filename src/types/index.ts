@@ -40,6 +40,8 @@ export interface HabitLogEntry {
 
 export type ViewMode = 'today' | 'upcoming' | 'inbox' | 'plan' | 'habits' | 'categories' | 'all' | 'calendar';
 
+export type AppRoute = '/' | '/login' | '/signup' | '/forgot-password' | '/reset-password' | '/app';
+
 export interface ToastMessage {
   id: string;
   type: 'info' | 'success' | 'error';
