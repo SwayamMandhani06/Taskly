@@ -2,6 +2,19 @@ import { create } from 'zustand';
 import { db, BackupSnapshot } from '../db/database';
 import { Task, Habit, HabitLogEntry, ViewMode, ToastMessage } from '../types';
 import { getTodayString, calculateNextDueDate } from '../utils/dateHelpers';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
+import {
+  pullAndMergeFromCloud,
+  migrateLocalDataToCloud,
+  pushTaskUpsert,
+  pushTaskDelete,
+  pushHabitUpsert,
+  pushHabitDelete,
+  pushHabitLogUpsert,
+  flushOfflineQueue,
+  setupSupabaseRealtime,
+} from '../lib/supabaseSync';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -12,7 +25,12 @@ interface TaskStore {
   initialized: boolean;
   activeView: ViewMode;
   theme: ThemeMode;
-  
+
+  // Supabase Auth & Cloud Sync
+  user: User | null;
+  session: Session | null;
+  authInitialized: boolean;
+
   // Lock screen / PIN protection state
   isLocked: boolean;
   isLockEnabled: boolean;
@@ -32,6 +50,8 @@ interface TaskStore {
 
   // Database initialization & load
   loadData: () => Promise<void>;
+  syncWithCloud: () => Promise<void>;
+  signOut: () => Promise<void>;
 
   // Navigation & Theme
   setActiveView: (view: ViewMode) => void;
@@ -115,6 +135,8 @@ const getSavedLockState = (): { isLockEnabled: boolean; pinCode: string } => {
   return { isLockEnabled: true, pinCode: '2506' };
 };
 
+let realtimeCleanup: (() => void) | null = null;
+
 export const useTaskStore = create<TaskStore>((set, get) => {
   const initialLock = getSavedLockState();
 
@@ -125,7 +147,11 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     initialized: false,
     activeView: 'today',
     theme: getSavedTheme(),
-    
+
+    user: null,
+    session: null,
+    authInitialized: false,
+
     isLocked: initialLock.isLockEnabled,
     isLockEnabled: initialLock.isLockEnabled,
     pinCode: initialLock.pinCode,
@@ -145,131 +171,100 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       try {
         applyThemeToDOM(get().theme);
 
+        // 1. Initial local IndexedDB load
         let tasks = await db.tasks.toArray();
         let habits = await db.habits.toArray();
         let habitLogs = await db.habitLogs.toArray();
 
-        // Seed initial data if database is empty
-        if (tasks.length === 0 && habits.length === 0) {
-          const today = getTodayString();
-          
-          const seedTasks: Task[] = [
-            {
-              id: 'task-1',
-              title: 'Review quarterly goals & project milestones',
-              notes: 'Check progress against annual metrics and re-align team priorities.',
-              priority: 'urgent',
-              dueDate: today,
-              dueTime: '09:30',
-              category: 'Work',
-              subtasks: [
-                { id: 'st-1', text: 'Audit completed deliverables', done: true },
-                { id: 'st-2', text: 'Draft summary report', done: false },
-              ],
-              recurring: 'weekly',
-              estimateMinutes: 45,
-              completed: false,
-              createdAt: Date.now() - 3600000,
-            },
-            {
-              id: 'task-2',
-              title: 'Read 2 chapters of System Design Interview',
-              notes: 'Focus on distributed caching and load balancing strategies.',
-              priority: 'high',
-              dueDate: today,
-              dueTime: '17:00',
-              category: 'Learning',
-              subtasks: [],
-              recurring: 'daily',
-              estimateMinutes: 60,
-              completed: false,
-              createdAt: Date.now() - 7200000,
-            },
-            {
-              id: 'task-3',
-              title: 'Schedule dentist checkup & hygiene appointment',
-              priority: 'medium',
-              category: 'Personal',
-              subtasks: [],
-              recurring: 'none',
-              estimateMinutes: 15,
-              completed: false,
-              createdAt: Date.now() - 86400000,
-            },
-            {
-              id: 'task-4',
-              title: 'Refactor state persistence layer for offline mode',
-              priority: 'urgent',
-              dueDate: '2026-08-20',
-              category: 'Development',
-              subtasks: [
-                { id: 'st-3', text: 'Configure Dexie schema', done: true },
-                { id: 'st-4', text: 'Add sync handlers', done: false }
-              ],
-              recurring: 'none',
-              estimateMinutes: 90,
-              completed: false,
-              createdAt: Date.now() - 172800000,
-            }
-          ];
-
-          const seedHabits: Habit[] = [
-            {
-              id: 'habit-1',
-              title: 'Morning Deep Work (90 mins)',
-              category: 'Productivity',
-              priority: 'urgent',
-              estimateMinutes: 90,
-              createdAt: Date.now(),
-            },
-            {
-              id: 'habit-2',
-              title: 'Daily Walk & Sun Exposure',
-              category: 'Health',
-              priority: 'medium',
-              estimateMinutes: 30,
-              createdAt: Date.now(),
-            },
-            {
-              id: 'habit-3',
-              title: 'Nightly Review & Plan Tomorrow',
-              category: 'Personal',
-              priority: 'high',
-              estimateMinutes: 15,
-              createdAt: Date.now(),
-            }
-          ];
-
-          const yesterday = new Date();
-          yesterday.setDate(yesterday.getDate() - 1);
-          const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-          const seedLogs: HabitLogEntry[] = [
-            {
-              date: yesterdayStr,
-              completedHabits: {
-                'habit-1': true,
-                'habit-2': true,
-              }
-            }
-          ];
-
-          await db.tasks.bulkAdd(seedTasks);
-          await db.habits.bulkAdd(seedHabits);
-          await db.habitLogs.bulkAdd(seedLogs);
-
-          tasks = seedTasks;
-          habits = seedHabits;
-          habitLogs = seedLogs;
-
-          // Initial snapshot
-          await get().createAutoBackup();
-        }
-
         set({ tasks, habits, habitLogs, initialized: true });
+
+        // 2. Initialize Supabase Auth & Realtime Sync
+        if (isSupabaseConfigured() && supabase) {
+          const { data } = await supabase.auth.getSession();
+          const session = data.session;
+          const user = session?.user || null;
+
+          set({ session, user, authInitialized: true });
+
+          if (user) {
+            // First-time local to cloud migration
+            await migrateLocalDataToCloud(user.id);
+
+            // Pull latest cloud rows & merge
+            const cloudData = await pullAndMergeFromCloud(user.id);
+            set({
+              tasks: cloudData.tasks,
+              habits: cloudData.habits,
+              habitLogs: cloudData.habitLogs,
+            });
+
+            // Flush offline queue if online
+            await flushOfflineQueue(user.id);
+
+            // Register Realtime subscription
+            if (realtimeCleanup) realtimeCleanup();
+            realtimeCleanup = setupSupabaseRealtime(user.id, () => {
+              get().syncWithCloud();
+            });
+
+            // Window online listener
+            window.addEventListener('online', () => {
+              flushOfflineQueue(user.id);
+              get().syncWithCloud();
+            });
+          }
+
+          // Auth State Change listener
+          supabase.auth.onAuthStateChange(async (_event, session) => {
+            const currentUser = session?.user || null;
+            set({ session, user: currentUser, authInitialized: true });
+
+            if (currentUser) {
+              await migrateLocalDataToCloud(currentUser.id);
+              const cloudData = await pullAndMergeFromCloud(currentUser.id);
+              set({
+                tasks: cloudData.tasks,
+                habits: cloudData.habits,
+                habitLogs: cloudData.habitLogs,
+              });
+
+              if (realtimeCleanup) realtimeCleanup();
+              realtimeCleanup = setupSupabaseRealtime(currentUser.id, () => {
+                get().syncWithCloud();
+              });
+            } else {
+              if (realtimeCleanup) realtimeCleanup();
+            }
+          });
+        } else {
+          set({ authInitialized: true });
+        }
       } catch (err) {
-        console.error('Failed to load data from IndexedDB', err);
+        console.error('Failed to load database & auth state', err);
         get().addToast('error', 'Failed to load local database.');
+      }
+    },
+
+    syncWithCloud: async () => {
+      const user = get().user;
+      if (!user) return;
+      try {
+        const cloudData = await pullAndMergeFromCloud(user.id);
+        set({
+          tasks: cloudData.tasks,
+          habits: cloudData.habits,
+          habitLogs: cloudData.habitLogs,
+        });
+      } catch (err) {
+        console.error('Failed to sync with cloud', err);
+      }
+    },
+
+    signOut: async () => {
+      if (supabase) {
+        await supabase.auth.signOut();
+        set({ session: null, user: null });
+        get().addToast('info', 'Logged out.');
       }
     },
 
@@ -327,7 +322,6 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
         await db.backups.put({ id: backupId, timestamp, data });
 
-        // Maintain a rotating window of the last 5 snapshots
         const allBackups = await db.backups.orderBy('timestamp').toArray();
         if (allBackups.length > 5) {
           const toRemove = allBackups.slice(0, allBackups.length - 5);
@@ -435,7 +429,6 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         const importedHabits: Habit[] = Array.isArray(parsed.habits) ? parsed.habits : [];
         const importedLogs: HabitLogEntry[] = Array.isArray(parsed.habitLogs) ? parsed.habitLogs : [];
 
-        // Transactional restore
         await db.transaction('rw', [db.tasks, db.habits, db.habitLogs], async () => {
           await db.tasks.clear();
           await db.habits.clear();
@@ -453,6 +446,14 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         });
 
         await get().createAutoBackup();
+
+        const user = get().user;
+        if (user) {
+          for (const t of importedTasks) await pushTaskUpsert(t, user.id);
+          for (const h of importedHabits) await pushHabitUpsert(h, user.id);
+          for (const l of importedLogs) await pushHabitLogUpsert(l, user.id);
+        }
+
         get().addToast('success', `Imported ${importedTasks.length} tasks and ${importedHabits.length} habits!`);
         return true;
       } catch (err) {
@@ -488,6 +489,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         await db.tasks.add(newTask);
         set(state => ({ tasks: [newTask, ...state.tasks] }));
         await get().createAutoBackup();
+
+        const user = get().user;
+        if (user) {
+          pushTaskUpsert(newTask, user.id);
+        }
+
         get().addToast('success', `Created task "${newTask.title.slice(0, 24)}${newTask.title.length > 24 ? '...' : ''}"`);
       } catch (err) {
         console.error('Failed to add task', err);
@@ -502,6 +509,13 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           tasks: state.tasks.map(t => (t.id === id ? { ...t, ...updates } : t))
         }));
         await get().createAutoBackup();
+
+        const user = get().user;
+        const updated = get().tasks.find(t => t.id === id);
+        if (user && updated) {
+          pushTaskUpsert(updated, user.id);
+        }
+
         get().addToast('info', 'Task updated.');
       } catch (err) {
         console.error('Failed to update task', err);
@@ -514,6 +528,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         await db.tasks.delete(id);
         set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
         await get().createAutoBackup();
+
+        const user = get().user;
+        if (user) {
+          pushTaskDelete(id, user.id);
+        }
+
         get().addToast('info', 'Task deleted.');
       } catch (err) {
         console.error('Failed to delete task', err);
@@ -526,6 +546,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       const task = tasks.find(t => t.id === id);
       if (!task) return;
 
+      const user = get().user;
       const willBeCompleted = !task.completed;
 
       if (willBeCompleted && task.recurring !== 'none') {
@@ -557,6 +578,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
             ]
           }));
           await get().createAutoBackup();
+
+          if (user) {
+            pushTaskUpsert(updatedCurrent, user.id);
+            pushTaskUpsert(newRecurringTask, user.id);
+          }
+
           get().addToast('success', `Completed task & scheduled next for ${nextDueDate}`);
         } catch (err) {
           console.error('Failed recurring task toggle', err);
@@ -574,6 +601,11 @@ export const useTaskStore = create<TaskStore>((set, get) => {
             tasks: state.tasks.map(t => (t.id === id ? { ...t, ...updates } : t))
           }));
           await get().createAutoBackup();
+
+          const updated = get().tasks.find(t => t.id === id);
+          if (user && updated) {
+            pushTaskUpsert(updated, user.id);
+          }
         } catch (err) {
           console.error('Failed to toggle task', err);
           get().addToast('error', 'Error toggling task completion.');
@@ -592,6 +624,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         await db.habits.add(newHabit);
         set(state => ({ habits: [newHabit, ...state.habits] }));
         await get().createAutoBackup();
+
+        const user = get().user;
+        if (user) {
+          pushHabitUpsert(newHabit, user.id);
+        }
+
         get().addToast('success', `Added habit "${newHabit.title}"`);
       } catch (err) {
         console.error('Failed to add habit', err);
@@ -606,6 +644,13 @@ export const useTaskStore = create<TaskStore>((set, get) => {
           habits: state.habits.map(h => (h.id === id ? { ...h, ...updates } : h))
         }));
         await get().createAutoBackup();
+
+        const user = get().user;
+        const updated = get().habits.find(h => h.id === id);
+        if (user && updated) {
+          pushHabitUpsert(updated, user.id);
+        }
+
         get().addToast('info', 'Habit updated.');
       } catch (err) {
         console.error('Failed to update habit', err);
@@ -618,6 +663,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         await db.habits.delete(id);
         set(state => ({ habits: state.habits.filter(h => h.id !== id) }));
         await get().createAutoBackup();
+
+        const user = get().user;
+        if (user) {
+          pushHabitDelete(id, user.id);
+        }
+
         get().addToast('info', 'Habit deleted.');
       } catch (err) {
         console.error('Failed to delete habit', err);
@@ -653,6 +704,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
 
         set({ habitLogs: updatedLogs });
         await get().createAutoBackup();
+
+        const user = get().user;
+        const updatedEntry = updatedLogs.find(l => l.date === targetDate);
+        if (user && updatedEntry) {
+          pushHabitLogUpsert(updatedEntry, user.id);
+        }
       } catch (err) {
         console.error('Failed to toggle habit', err);
         get().addToast('error', 'Error updating habit log.');

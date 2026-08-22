@@ -14,13 +14,26 @@ import { CalendarView } from '../../views/CalendarView';
 import { TaskEditorModal } from '../tasks/TaskEditorModal';
 import { HabitEditorModal } from '../habits/HabitEditorModal';
 import { DataSafetyModal } from '../common/DataSafetyModal';
+import { AuthScreen } from '../common/AuthScreen';
 import { ToastContainer } from '../common/Toast';
 import { AppLockScreen } from '../common/AppLockScreen';
-import { Plus, Bug, Lock } from 'lucide-react';
+import { Plus, Bug, Lock, LogOut } from 'lucide-react';
 import { DebugPanel } from '../debug/DebugPanel';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 export const AppShell: React.FC = () => {
-  const { activeView, openCreateTaskModal, initialized, isLocked, lockApp, isLockEnabled } = useTaskStore();
+  const {
+    activeView,
+    openCreateTaskModal,
+    initialized,
+    isLocked,
+    lockApp,
+    isLockEnabled,
+    user,
+    authInitialized,
+    signOut,
+  } = useTaskStore();
+
   const [showDebug, setShowDebug] = React.useState(false);
 
   const renderActiveView = () => {
@@ -46,18 +59,28 @@ export const AppShell: React.FC = () => {
     }
   };
 
-  if (!initialized) {
+  if (!initialized || !authInitialized) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center font-mono text-xs text-[var(--ink-soft)]">
         <div className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card">
           <div className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-          <span>Initializing Taskly database...</span>
+          <span>Initializing Taskly database & auth...</span>
         </div>
       </div>
     );
   }
 
-  // Display Lock Screen if App is PIN locked
+  // Display Supabase Auth Screen if configured and user not logged in
+  if (isSupabaseConfigured() && !user) {
+    return (
+      <>
+        <AuthScreen />
+        <ToastContainer />
+      </>
+    );
+  }
+
+  // Display PIN Lock Screen if App is PIN locked
   if (isLocked) {
     return (
       <>
@@ -101,6 +124,19 @@ export const AppShell: React.FC = () => {
               </button>
             )}
 
+            {/* Mobile Sign Out Button */}
+            {user && (
+              <button
+                type="button"
+                onClick={signOut}
+                aria-label="Sign Out"
+                title="Sign Out"
+                className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] active:scale-95 flex items-center justify-center min-w-[36px] min-h-[36px]"
+              >
+                <LogOut className="w-4 h-4 text-[var(--urgent)]" />
+              </button>
+            )}
+
             {/* Mobile Debug Toggle */}
             <button
               type="button"
@@ -117,14 +153,14 @@ export const AppShell: React.FC = () => {
         {renderActiveView()}
       </main>
 
-      {/* Floating Action Button (FAB) on Mobile — Safe above tab bar & notch */}
+      {/* Floating Action Button (FAB) on Mobile — Enlarged 60x60px (>=56x56px) for comfortable thumb tap */}
       <button
         type="button"
         onClick={() => openCreateTaskModal()}
         aria-label="Create new task"
-        className="md:hidden fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-50 w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-glow active:scale-95 transition-transform"
+        className="md:hidden fixed right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 w-15 h-15 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-glow active:scale-95 transition-transform"
       >
-        <Plus className="w-6 h-6 sm:w-7 sm:h-7" />
+        <Plus className="w-8 h-8" />
       </button>
 
       {/* Desktop Debug Toggle in Bottom Corner */}

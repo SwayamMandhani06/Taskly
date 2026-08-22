@@ -14,6 +14,8 @@ import {
   FolderKanban,
   Lock,
   ShieldCheck,
+  LogOut,
+  User,
 } from 'lucide-react';
 
 interface NavItem {
@@ -23,7 +25,16 @@ interface NavItem {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeView, setActiveView, tasks, openCreateTaskModal, lockApp, isLockEnabled } = useTaskStore();
+  const {
+    activeView,
+    setActiveView,
+    tasks,
+    openCreateTaskModal,
+    lockApp,
+    isLockEnabled,
+    user,
+    signOut,
+  } = useTaskStore();
 
   const todayCount = tasks.filter(t => t.dueDate === new Date().toISOString().split('T')[0] && !t.completed).length;
   const inboxCount = tasks.filter(t => !t.dueDate && !t.completed).length;
@@ -70,6 +81,26 @@ export const Sidebar: React.FC = () => {
             </button>
           )}
         </div>
+
+        {/* User Account Info */}
+        {user && (
+          <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-xs font-mono">
+            <div className="flex items-center gap-2 truncate pr-2">
+              <User className="w-3.5 h-3.5 text-[var(--accent)] shrink-0" />
+              <span className="truncate text-[var(--ink)]" title={user.email}>
+                {user.email}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              title="Sign Out"
+              className="p-1 text-[var(--ink-soft)] hover:text-[var(--urgent)] transition-colors shrink-0"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Custom Theme Switcher Toggle */}
         <div className="pt-1">
