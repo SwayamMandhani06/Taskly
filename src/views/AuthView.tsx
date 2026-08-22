@@ -197,9 +197,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ mode, onNavigate }) => {
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => onNavigate('/')}
             >
-              <div className="w-9 h-9 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
-                <div className="w-1.5 h-5 bg-[var(--urgent)] rounded-full" />
-              </div>
+              <img src="/logo.png" alt="Taskly Logo" className="w-9 h-9 rounded-xl object-contain shadow-glow" />
               <span className="font-bold font-sans text-xl tracking-tight text-[var(--ink)]">
                 Taskly
               </span>

@@ -86,9 +86,7 @@ export const AppShell: React.FC = () => {
         {/* Top Header Row for Mobile */}
         <header className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--border)] md:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="w-6 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
-              <div className="w-1.5 h-4 bg-[var(--urgent)] rounded-full" />
-            </div>
+            <img src="/logo.png" alt="Taskly Logo" className="w-7 h-7 rounded-xl object-contain shadow-glow" />
             <span className="font-bold font-sans text-lg tracking-tight text-[var(--ink)]">
               Taskly
             </span>

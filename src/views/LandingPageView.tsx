@@ -68,9 +68,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onNavigate }) 
             className="flex items-center gap-3 cursor-pointer group"
             onClick={() => onNavigate('/')}
           >
-            <div className="w-8 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
-              <div className="w-1.5 h-5 bg-[var(--urgent)] rounded-full" />
-            </div>
+            <img src="/logo.png" alt="Taskly Logo" className="w-8 h-8 rounded-xl object-contain shadow-glow group-hover:scale-105 transition-transform" />
             <span className="font-bold font-sans text-xl tracking-tight text-[var(--ink)]">
               Taskly
             </span>
@@ -648,9 +646,7 @@ export const LandingPageView: React.FC<LandingPageViewProps> = ({ onNavigate }) 
       <footer className="py-12 border-t border-[var(--border)] bg-[var(--surface-2)]/50 relative z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-mono text-[var(--ink-soft)]">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-lg bg-[var(--accent)] flex items-center justify-center">
-              <div className="w-1 h-3 bg-[var(--urgent)] rounded-full" />
-            </div>
+            <img src="/logo.png" alt="Taskly Logo" className="w-6 h-6 rounded-lg object-contain" />
             <span className="font-bold text-[var(--ink)] font-sans text-sm">Taskly</span>
             <span>— Personal Productivity Workspace</span>
           </div>

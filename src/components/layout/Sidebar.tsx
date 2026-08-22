@@ -53,9 +53,7 @@ export const Sidebar: React.FC = () => {
       <div className="p-5 border-b border-[var(--border)] space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
-              <div className="w-1.5 h-5 bg-[var(--urgent)] rounded-full" />
-            </div>
+            <img src="/logo.png" alt="Taskly Logo" className="w-8 h-8 rounded-xl object-contain shadow-glow" />
             <div>
               <h1 className="text-lg font-bold font-sans tracking-tight text-[var(--ink)]">
                 Taskly
