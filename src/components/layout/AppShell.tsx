@@ -16,8 +16,7 @@ import { HabitEditorModal } from '../habits/HabitEditorModal';
 import { DataSafetyModal } from '../common/DataSafetyModal';
 import { AuthScreen } from '../common/AuthScreen';
 import { ToastContainer } from '../common/Toast';
-import { AppLockScreen } from '../common/AppLockScreen';
-import { Plus, Bug, Lock, LogOut } from 'lucide-react';
+import { Plus, Bug, LogOut } from 'lucide-react';
 import { DebugPanel } from '../debug/DebugPanel';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
@@ -26,9 +25,6 @@ export const AppShell: React.FC = () => {
     activeView,
     openCreateTaskModal,
     initialized,
-    isLocked,
-    lockApp,
-    isLockEnabled,
     user,
     authInitialized,
     signOut,
@@ -80,16 +76,6 @@ export const AppShell: React.FC = () => {
     );
   }
 
-  // Display PIN Lock Screen if App is PIN locked
-  if (isLocked) {
-    return (
-      <>
-        <AppLockScreen />
-        <ToastContainer />
-      </>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[var(--bg)] flex flex-col md:flex-row text-[var(--ink)] max-w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
@@ -101,7 +87,7 @@ export const AppShell: React.FC = () => {
         <header className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--border)] md:hidden">
           <div className="flex items-center gap-2.5">
             <div className="w-6 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
-              <div className="w-1 h-4 bg-[var(--urgent)] rounded-full" />
+              <div className="w-1.5 h-4 bg-[var(--urgent)] rounded-full" />
             </div>
             <span className="font-bold font-sans text-lg tracking-tight text-[var(--ink)]">
               Taskly
@@ -111,18 +97,6 @@ export const AppShell: React.FC = () => {
           <div className="flex items-center gap-2">
             {/* Mobile Theme Toggle */}
             <ThemeToggle compact={true} />
-
-            {/* Mobile Lock Button */}
-            {isLockEnabled && (
-              <button
-                type="button"
-                onClick={lockApp}
-                aria-label="Lock app"
-                className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] active:scale-95 flex items-center justify-center min-w-[36px] min-h-[36px]"
-              >
-                <Lock className="w-4 h-4" />
-              </button>
-            )}
 
             {/* Mobile Sign Out Button */}
             {user && (
@@ -153,7 +127,7 @@ export const AppShell: React.FC = () => {
         {renderActiveView()}
       </main>
 
-      {/* Floating Action Button (FAB) on Mobile — Enlarged 60x60px (>=56x56px) for comfortable thumb tap */}
+      {/* Floating Action Button (FAB) on Mobile — Enlarged 60x60px */}
       <button
         type="button"
         onClick={() => openCreateTaskModal()}

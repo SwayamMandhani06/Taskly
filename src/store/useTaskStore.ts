@@ -31,11 +31,6 @@ interface TaskStore {
   session: Session | null;
   authInitialized: boolean;
 
-  // Lock screen / PIN protection state
-  isLocked: boolean;
-  isLockEnabled: boolean;
-  pinCode: string;
-
   // UI state
   isEditorOpen: boolean;
   editingTaskId: string | null;
@@ -56,12 +51,6 @@ interface TaskStore {
   // Navigation & Theme
   setActiveView: (view: ViewMode) => void;
   toggleTheme: () => void;
-
-  // App Lock actions
-  unlockApp: (pin: string) => boolean;
-  toggleLockEnabled: (enabled: boolean) => void;
-  setPinCode: (newPin: string) => void;
-  lockApp: () => void;
 
   // Task Actions
   addTask: (taskData: Omit<Task, 'id' | 'createdAt' | 'completed'>) => Promise<void>;
@@ -123,23 +112,9 @@ const applyThemeToDOM = (theme: ThemeMode) => {
   }
 };
 
-const getSavedLockState = (): { isLockEnabled: boolean; pinCode: string } => {
-  if (typeof window !== 'undefined') {
-    const enabled = localStorage.getItem('taskly-lock-enabled');
-    const pin = localStorage.getItem('taskly-pin');
-    return {
-      isLockEnabled: enabled !== null ? enabled === 'true' : true,
-      pinCode: pin || '2506',
-    };
-  }
-  return { isLockEnabled: true, pinCode: '2506' };
-};
-
 let realtimeCleanup: (() => void) | null = null;
 
 export const useTaskStore = create<TaskStore>((set, get) => {
-  const initialLock = getSavedLockState();
-
   return {
     tasks: [],
     habits: [],
@@ -151,10 +126,6 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     user: null,
     session: null,
     authInitialized: false,
-
-    isLocked: initialLock.isLockEnabled,
-    isLockEnabled: initialLock.isLockEnabled,
-    pinCode: initialLock.pinCode,
 
     isEditorOpen: false,
     editingTaskId: null,
@@ -277,38 +248,6 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       set({ theme: nextTheme });
     },
 
-    unlockApp: (inputPin: string) => {
-      if (inputPin === get().pinCode) {
-        set({ isLocked: false });
-        get().addToast('success', 'App unlocked.');
-        return true;
-      }
-      return false;
-    },
-
-    toggleLockEnabled: (enabled: boolean) => {
-      localStorage.setItem('taskly-lock-enabled', String(enabled));
-      set({ isLockEnabled: enabled, isLocked: enabled });
-      get().addToast('info', enabled ? 'PIN lock enabled.' : 'PIN lock disabled.');
-    },
-
-    setPinCode: (newPin: string) => {
-      if (/^\d{4}$/.test(newPin)) {
-        localStorage.setItem('taskly-pin', newPin);
-        set({ pinCode: newPin });
-        get().addToast('success', 'PIN code updated successfully.');
-      } else {
-        get().addToast('error', 'PIN must be 4 digits.');
-      }
-    },
-
-    lockApp: () => {
-      if (get().isLockEnabled) {
-        set({ isLocked: true });
-        get().addToast('info', 'Taskly locked.');
-      }
-    },
-
     // --- Safety Net: Automatic Local Backup ---
     createAutoBackup: async () => {
       try {
@@ -385,12 +324,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     // --- Safety Net: Manual Export & Import JSON ---
     exportData: () => {
       try {
-        const { tasks, habits, habitLogs, theme, isLockEnabled } = get();
+        const { tasks, habits, habitLogs, theme } = get();
         const exportPayload = {
           version: '1.0.0',
           app: 'Taskly',
           exportedAt: new Date().toISOString(),
-          settings: { theme, isLockEnabled },
+          settings: { theme },
           tasks,
           habits,
           habitLogs,

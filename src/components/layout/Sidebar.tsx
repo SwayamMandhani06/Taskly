@@ -12,7 +12,6 @@ import {
   Calendar,
   Plus,
   FolderKanban,
-  Lock,
   ShieldCheck,
   LogOut,
   User,
@@ -30,8 +29,6 @@ export const Sidebar: React.FC = () => {
     setActiveView,
     tasks,
     openCreateTaskModal,
-    lockApp,
-    isLockEnabled,
     user,
     signOut,
   } = useTaskStore();
@@ -68,18 +65,6 @@ export const Sidebar: React.FC = () => {
               </p>
             </div>
           </div>
-
-          {isLockEnabled && (
-            <button
-              type="button"
-              onClick={lockApp}
-              aria-label="Lock application"
-              title="Lock Taskly with PIN code"
-              className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--accent)] hover:border-[var(--accent)] active:scale-95 transition-all"
-            >
-              <Lock className="w-4 h-4" />
-            </button>
-          )}
         </div>
 
         {/* User Account Info */}
