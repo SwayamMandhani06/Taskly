@@ -7,16 +7,19 @@ import { UpcomingView } from '../../views/UpcomingView';
 import { InboxView } from '../../views/InboxView';
 import { PlanMyDayView } from '../../views/PlanMyDayView';
 import { HabitsView } from '../../views/HabitsView';
+import { CategoriesView } from '../../views/CategoriesView';
 import { AllTasksView } from '../../views/AllTasksView';
 import { CalendarView } from '../../views/CalendarView';
 import { TaskEditorModal } from '../tasks/TaskEditorModal';
 import { HabitEditorModal } from '../habits/HabitEditorModal';
+import { DataSafetyModal } from '../common/DataSafetyModal';
 import { ToastContainer } from '../common/Toast';
-import { Plus, Bug } from 'lucide-react';
+import { AppLockScreen } from '../common/AppLockScreen';
+import { Plus, Bug, Lock } from 'lucide-react';
 import { DebugPanel } from '../debug/DebugPanel';
 
 export const AppShell: React.FC = () => {
-  const { activeView, openCreateTaskModal, initialized } = useTaskStore();
+  const { activeView, openCreateTaskModal, initialized, isLocked, lockApp, isLockEnabled } = useTaskStore();
   const [showDebug, setShowDebug] = React.useState(false);
 
   const renderActiveView = () => {
@@ -31,6 +34,8 @@ export const AppShell: React.FC = () => {
         return <PlanMyDayView />;
       case 'habits':
         return <HabitsView />;
+      case 'categories':
+        return <CategoriesView />;
       case 'all':
         return <AllTasksView />;
       case 'calendar':
@@ -43,42 +48,66 @@ export const AppShell: React.FC = () => {
   if (!initialized) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center font-mono text-xs text-[var(--ink-soft)]">
-        <div className="flex items-center gap-3 p-4 rounded bg-white border border-[var(--border)] shadow-sm">
+        <div className="flex items-center gap-3 p-4 rounded-2xl bg-[var(--surface)] border border-[var(--border)] shadow-card">
           <div className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-          <span>Initializing Taskly ledger database...</span>
+          <span>Initializing Taskly database...</span>
         </div>
       </div>
     );
   }
 
+  // Display Lock Screen if App is PIN locked
+  if (isLocked) {
+    return (
+      <>
+        <AppLockScreen />
+        <ToastContainer />
+      </>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex flex-col md:flex-row text-[var(--ink)]">
+    <div className="min-h-screen bg-[var(--bg)] flex flex-col md:flex-row text-[var(--ink)] max-w-full overflow-x-hidden">
       {/* Desktop Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <main className="flex-1 min-w-0 p-4 md:p-8 overflow-y-auto mb-16 md:mb-0">
+      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-8 overflow-y-auto mb-20 md:mb-0 max-w-full">
         {/* Top Header Row for Mobile & Debug Toggle */}
         <header className="flex items-center justify-between pb-4 mb-4 border-b border-[var(--border)] md:hidden">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-6 rounded bg-[var(--accent)] flex items-center justify-center">
-              <div className="w-1 h-3 bg-[var(--urgent)] rounded-full" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
+              <div className="w-1 h-4 bg-[var(--urgent)] rounded-full" />
             </div>
-            <span className="font-bold font-display text-base tracking-tight text-[var(--ink)]">
+            <span className="font-bold font-sans text-lg tracking-tight text-[var(--ink)]">
               Taskly
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowDebug(!showDebug)}
-            className="p-1.5 rounded border border-[var(--border)] bg-white text-[var(--ink-soft)] text-xs font-mono"
-            aria-label="Toggle debug panel"
-          >
-            <Bug className="w-4 h-4" />
-          </button>
+
+          <div className="flex items-center gap-2">
+            {isLockEnabled && (
+              <button
+                type="button"
+                onClick={lockApp}
+                aria-label="Lock app"
+                className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] active:scale-95"
+              >
+                <Lock className="w-4 h-4" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowDebug(!showDebug)}
+              className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] text-xs font-mono active:scale-95"
+              aria-label="Toggle debug panel"
+            >
+              <Bug className="w-4 h-4" />
+            </button>
+          </div>
         </header>
 
-        {/* View Component */}
+        {/* Active View */}
         {renderActiveView()}
       </main>
 
@@ -87,9 +116,9 @@ export const AppShell: React.FC = () => {
         type="button"
         onClick={() => openCreateTaskModal()}
         aria-label="Create new task"
-        className="md:hidden fixed right-5 bottom-20 z-40 w-12 h-12 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-lg hover:bg-[var(--accent-hover)] transition-transform active:scale-95"
+        className="md:hidden fixed right-5 bottom-20 z-40 w-14 h-14 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-glow active:scale-95 transition-transform"
       >
-        <Plus className="w-6 h-6" />
+        <Plus className="w-7 h-7" />
       </button>
 
       {/* Desktop Debug Toggle in Bottom Corner */}
@@ -97,7 +126,7 @@ export const AppShell: React.FC = () => {
         <button
           type="button"
           onClick={() => setShowDebug(!showDebug)}
-          className="p-2 rounded-full bg-white border border-[var(--border)] text-[var(--ink-soft)] hover:text-[var(--accent)] shadow-hairline transition-colors"
+          className="p-2.5 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--ink-soft)] hover:text-[var(--accent)] shadow-card transition-all active:scale-95"
           title="Toggle Debug Panel"
         >
           <Bug className="w-4 h-4" />
@@ -115,6 +144,9 @@ export const AppShell: React.FC = () => {
 
       {/* Habit Editor Modal */}
       <HabitEditorModal />
+
+      {/* Data Safety & Backup Modal */}
+      <DataSafetyModal />
 
       {/* Toast Feedback */}
       <ToastContainer />

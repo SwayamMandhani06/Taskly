@@ -11,6 +11,9 @@ import {
   Layers,
   Calendar,
   Plus,
+  FolderKanban,
+  Lock,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface NavItem {
@@ -20,7 +23,7 @@ interface NavItem {
 }
 
 export const Sidebar: React.FC = () => {
-  const { activeView, setActiveView, tasks, openCreateTaskModal } = useTaskStore();
+  const { activeView, setActiveView, tasks, openCreateTaskModal, lockApp, isLockEnabled } = useTaskStore();
 
   const todayCount = tasks.filter(t => t.dueDate === new Date().toISOString().split('T')[0] && !t.completed).length;
   const inboxCount = tasks.filter(t => !t.dueDate && !t.completed).length;
@@ -31,6 +34,7 @@ export const Sidebar: React.FC = () => {
     { id: 'inbox', label: 'Inbox', icon: <Inbox className="w-4 h-4" /> },
     { id: 'plan', label: 'Plan My Day', icon: <ListTodo className="w-4 h-4" /> },
     { id: 'habits', label: 'Habits', icon: <Sparkles className="w-4 h-4" /> },
+    { id: 'categories', label: 'Categories', icon: <FolderKanban className="w-4 h-4" /> },
     { id: 'all', label: 'All Tasks', icon: <Layers className="w-4 h-4" /> },
     { id: 'calendar', label: 'Calendar', icon: <Calendar className="w-4 h-4" /> },
   ];
@@ -39,21 +43,35 @@ export const Sidebar: React.FC = () => {
     <aside className="hidden md:flex flex-col w-64 h-screen bg-[var(--surface-2)] border-r border-[var(--border)] sticky top-0 shrink-0 select-none">
       {/* Brand Header */}
       <div className="p-5 border-b border-[var(--border)] space-y-3">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-9 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
-            <div className="w-1.5 h-5 bg-[var(--urgent)] rounded-full" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-[var(--accent)] flex items-center justify-center shadow-glow">
+              <div className="w-1.5 h-5 bg-[var(--urgent)] rounded-full" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold font-sans tracking-tight text-[var(--ink)]">
+                Taskly
+              </h1>
+              <p className="text-[10px] font-mono text-[var(--ink-soft)] uppercase tracking-wider">
+                Personal Workspace
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-lg font-bold font-sans tracking-tight text-[var(--ink)]">
-              Taskly
-            </h1>
-            <p className="text-[10px] font-mono text-[var(--ink-soft)] uppercase tracking-wider">
-              Personal Ledger
-            </p>
-          </div>
+
+          {isLockEnabled && (
+            <button
+              type="button"
+              onClick={lockApp}
+              aria-label="Lock application"
+              title="Lock Taskly with PIN code"
+              className="p-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-soft)] hover:text-[var(--accent)] hover:border-[var(--accent)] active:scale-95 transition-all"
+            >
+              <Lock className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
-        {/* Theme Switcher Toggle */}
+        {/* Custom Theme Switcher Toggle */}
         <div className="pt-1">
           <ThemeToggle />
         </div>
@@ -101,8 +119,17 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Quick Add Button */}
-      <div className="p-4 border-t border-[var(--border)]">
+      {/* Quick Add & Backup Buttons */}
+      <div className="p-4 border-t border-[var(--border)] space-y-2">
+        <button
+          type="button"
+          onClick={useTaskStore.getState().openBackupModal}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs font-mono font-medium hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all duration-150 active:scale-[0.97]"
+        >
+          <ShieldCheck className="w-4 h-4 text-[var(--accent)]" />
+          <span>Data Backup</span>
+        </button>
+
         <button
           type="button"
           onClick={() => openCreateTaskModal()}

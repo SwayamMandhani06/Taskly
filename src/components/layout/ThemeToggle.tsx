@@ -1,37 +1,41 @@
 import React from 'react';
-import { useTaskStore, ThemeMode } from '../../store/useTaskStore';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { useTaskStore } from '../../store/useTaskStore';
+import { Sun, Moon } from 'lucide-react';
 
 export const ThemeToggle: React.FC = () => {
-  const { theme, setTheme } = useTaskStore();
-
-  const options: { id: ThemeMode; label: string; icon: React.ReactNode }[] = [
-    { id: 'light', label: 'Light', icon: <Sun className="w-3.5 h-3.5" /> },
-    { id: 'dark', label: 'Dark', icon: <Moon className="w-3.5 h-3.5" /> },
-    { id: 'system', label: 'System', icon: <Monitor className="w-3.5 h-3.5" /> },
-  ];
+  const { theme, toggleTheme } = useTaskStore();
+  const isDark = theme === 'dark';
 
   return (
-    <div className="flex items-center gap-0.5 p-1 bg-[var(--surface)] border border-[var(--border)] rounded-full shadow-hairline">
-      {options.map(opt => {
-        const isActive = theme === opt.id;
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => setTheme(opt.id)}
-            title={`Switch to ${opt.label} mode`}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-mono transition-all duration-150 active:scale-95 ${
-              isActive
-                ? 'bg-[var(--accent)] text-white font-medium shadow-sm'
-                : 'text-[var(--ink-soft)] hover:text-[var(--ink)] hover:bg-[var(--surface-2)]'
-            }`}
-          >
-            {opt.icon}
-            <span className="capitalize">{opt.label}</span>
-          </button>
-        );
-      })}
-    </div>
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+      className="w-full flex items-center justify-between px-3 py-2 rounded-full bg-[var(--surface)] border border-[var(--border)] shadow-hairline hover:border-[var(--accent)] transition-all duration-200 active:scale-95 group"
+    >
+      <div className="flex items-center gap-2 text-xs font-mono text-[var(--ink)]">
+        {isDark ? (
+          <Moon className="w-4 h-4 text-[var(--accent)]" />
+        ) : (
+          <Sun className="w-4 h-4 text-[var(--high)]" />
+        )}
+        <span className="font-sans font-medium text-xs">
+          {isDark ? 'Dark Mode' : 'Light Mode'}
+        </span>
+      </div>
+
+      <div
+        className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 ease-in-out ${
+          isDark ? 'bg-[var(--accent)]' : 'bg-[var(--border)]'
+        }`}
+      >
+        <div
+          className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-200 ease-in-out ${
+            isDark ? 'translate-x-4' : 'translate-x-0'
+          }`}
+        />
+      </div>
+    </button>
   );
 };

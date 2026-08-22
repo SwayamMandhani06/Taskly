@@ -4,13 +4,21 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
+  server: {
+    port: 5173,
+    strictPort: false,
+  },
+  preview: {
+    port: 4173,
+    strictPort: false,
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'Taskly — Personal Productivity Ledger',
+        name: 'Taskly — Personal Productivity',
         short_name: 'Taskly',
         description: 'A calm, local-first personal productivity and task planner app.',
         theme_color: '#ECEEE8',

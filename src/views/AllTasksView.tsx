@@ -69,21 +69,31 @@ export const AllTasksView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-sans text-[var(--ink)]">All Tasks & Archive</h1>
           <p className="text-xs font-mono text-[var(--ink-soft)] mt-1">
             Search, filter, and view all tasks across categories
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => openCreateTaskModal()}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-xs font-mono font-medium hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97] shadow-glow"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Task</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={useTaskStore.getState().openBackupModal}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs font-mono font-medium hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all active:scale-[0.97]"
+          >
+            <span>Backup / Export</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => openCreateTaskModal()}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-xs font-mono font-medium hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97] shadow-glow"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Task</span>
+          </button>
+        </div>
       </div>
 
       {/* Controls Container */}

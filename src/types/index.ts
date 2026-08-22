@@ -38,7 +38,7 @@ export interface HabitLogEntry {
   completedHabits: Record<string, boolean>; // habitId -> boolean
 }
 
-export type ViewMode = 'today' | 'upcoming' | 'inbox' | 'plan' | 'habits' | 'all' | 'calendar';
+export type ViewMode = 'today' | 'upcoming' | 'inbox' | 'plan' | 'habits' | 'categories' | 'all' | 'calendar';
 
 export interface ToastMessage {
   id: string;
