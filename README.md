@@ -1,6 +1,6 @@
 # Taskly — Personal Productivity & To-Do Manager
 
-Taskly is a local-first, offline-ready personal productivity web application built with **React 18**, **TypeScript**, **Tailwind CSS**, **Zustand**, **Dexie.js** (IndexedDB), and **Supabase** (Auth, Postgres, Realtime Sync). Designed with a modern visual identity featuring **Geist & Geist Mono typography**, a **Custom Light/Dark theme switcher**, **PIN password protection**, pill controls, smooth micro-interactions, and signature priority visual indicators.
+Taskly is a local-first, offline-ready personal productivity web application built with **React 18**, **TypeScript**, **Tailwind CSS**, **Zustand**, **Dexie.js** (IndexedDB), and **Supabase** (Auth, Postgres, Realtime Sync). Designed with a modern visual identity featuring **Geist & Geist Mono typography**, a **Custom Light/Dark theme switcher**, pill controls, smooth micro-interactions, and signature priority visual indicators.
 
 ![Taskly Logo](public/logo.png)
 
@@ -10,20 +10,18 @@ Taskly is a local-first, offline-ready personal productivity web application bui
 
 Taskly features full cross-device synchronization powered by Supabase while preserving instant offline usability:
 
-- **Supabase Email/Password Auth**: Secure single-user authentication. Once logged in, your session persists across browser visits.
+- **Supabase Email/Password Auth**: Secure user authentication. Once logged in, your session persists across browser visits.
 - **Offline-First IndexedDB Cache**: Local writes to Dexie IndexedDB happen immediately so the UI stays instant even without network connectivity.
-- **Background Cloud Sync**: All task, habit, and habit log writes automatically sync to your Supabase Postgres database in the background.
+- **Conflict-Free Cloud Sync**: Tasks, habits, and habit logs sync seamlessly with Supabase in the background while safely preserving local offline records.
 - **Realtime Multi-Device Updates**: Changes made on your laptop reflect on your phone within seconds via Supabase Realtime subscriptions.
 - **Offline Queue**: Operations performed offline are queued locally and automatically flushed to Supabase when connectivity returns (`navigator.onLine`).
 - **One-Time Data Migration**: Existing local IndexedDB data is automatically seeded to Supabase on your first login.
-- **Double-Layer Security**: Supabase Auth + local PIN code lock (`AppLockScreen`).
 
 ---
 
 ## 🎨 Key Features
 
 - **Custom Light/Dark Theme Switcher**: Sleek toggle button with smooth animated sliding indicator and custom dark theme token palette (`#0C0E12`).
-- **PIN Password Protection**: Secure PIN lock screen protecting personal tasks and habits (Default PIN: `2506`).
 - **Data Safety Net & Auto-Backups**:
   - **Manual JSON Export / Import**: Downloads `taskly-backup-YYYY-MM-DD.json` containing all tasks, habits, and logs.
   - **Automatic Local Snapshots**: Records a rotating snapshot of the last 5 write operations in IndexedDB (`db.backups`).

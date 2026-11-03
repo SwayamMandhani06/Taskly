@@ -91,7 +91,7 @@ export const HabitEditorModal: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/40 backdrop-blur-xs flex justify-end">
       <div
-        className="w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-[var(--border)] animate-in slide-in-from-right duration-200"
+        className="w-full max-w-lg bg-[var(--surface)] h-full shadow-2xl flex flex-col border-l border-[var(--border)] animate-in slide-in-from-right duration-200"
         role="dialog"
         aria-labelledby="habit-modal-title"
       >
@@ -121,7 +121,7 @@ export const HabitEditorModal: React.FC = () => {
               value={title}
               onChange={e => setTitle(e.target.value)}
               placeholder="e.g. Daily Meditation, Read 20 pages..."
-              className="w-full px-3.5 py-2.5 rounded-md border border-[var(--border)] bg-white text-sm font-medium text-[var(--ink)] focus:border-[var(--accent)]"
+              className="w-full px-3.5 py-2.5 rounded-md border border-[var(--border)] bg-[var(--surface-2)] text-sm font-medium text-[var(--ink)] focus:bg-[var(--surface)] focus:border-[var(--accent)]"
             />
           </div>
 
@@ -159,7 +159,7 @@ export const HabitEditorModal: React.FC = () => {
                   onChange={e => setCategory(e.target.value)}
                   list="habit-category-suggestions"
                   placeholder="e.g. Health, Mindfulness, Learning..."
-                  className={`w-full py-2 pr-3 rounded-md border border-[var(--border)] text-xs font-mono bg-white text-[var(--ink)] ${
+                  className={`w-full py-2 pr-3 rounded-md border border-[var(--border)] text-xs font-mono bg-[var(--surface-2)] text-[var(--ink)] focus:bg-[var(--surface)] ${
                     category.trim() ? 'pl-8' : 'px-3'
                   }`}
                 />
@@ -184,7 +184,7 @@ export const HabitEditorModal: React.FC = () => {
                 value={estimateMinutes || ''}
                 onChange={e => setEstimateMinutes(e.target.value ? Number(e.target.value) : undefined)}
                 placeholder="e.g. 15"
-                className="w-28 px-3 py-1.5 rounded-md border border-[var(--border)] text-xs font-mono text-[var(--ink)] bg-white"
+                className="w-28 px-3 py-1.5 rounded-md border border-[var(--border)] text-xs font-mono text-[var(--ink)] bg-[var(--surface-2)] focus:bg-[var(--surface)]"
               />
               <div className="flex flex-wrap gap-1 text-xs font-mono">
                 {[10, 15, 30, 45, 60].map(mins => (

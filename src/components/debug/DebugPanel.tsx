@@ -8,21 +8,21 @@ interface DebugPanelProps {
 }
 
 export const DebugPanel: React.FC<DebugPanelProps> = ({ onClose }) => {
-  const { tasks, habits, habitLogs, loadData, addToast } = useTaskStore();
+  const { tasks, habits, habitLogs, loadData, seedSampleData, addToast } = useTaskStore();
 
   const handleResetData = async () => {
     if (confirm('Clear IndexedDB and re-seed sample data?')) {
       await db.tasks.clear();
       await db.habits.clear();
       await db.habitLogs.clear();
-      await loadData();
-      addToast('info', 'Database reset and re-seeded.');
+      await seedSampleData();
+      addToast('info', 'Database reset and sample data re-seeded.');
     }
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg border border-[var(--border)] shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col font-mono text-xs">
+      <div className="bg-[var(--surface)] text-[var(--ink)] rounded-2xl border border-[var(--border)] shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col font-mono text-xs">
         {/* Header */}
         <div className="px-4 py-3 border-b border-[var(--border)] bg-[var(--surface-2)] flex items-center justify-between">
           <div className="flex items-center gap-2 font-semibold text-[var(--ink)]">
@@ -81,7 +81,7 @@ export const DebugPanel: React.FC<DebugPanelProps> = ({ onClose }) => {
 
           <button
             onClick={loadData}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--bg)] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--bg)] transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Reload Store</span>
