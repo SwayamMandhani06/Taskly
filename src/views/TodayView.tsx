@@ -2,7 +2,7 @@ import React from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { HabitRow } from '../components/habits/HabitRow';
-import { isTaskOverdue, isTaskDueToday } from '../utils/dateHelpers';
+import { isTaskOverdue, isTaskDueToday, getTodayString } from '../utils/dateHelpers';
 import { AlertCircle, Calendar, Sparkles, Plus } from 'lucide-react';
 
 export const TodayView: React.FC = () => {
@@ -31,7 +31,7 @@ export const TodayView: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => openCreateTaskModal(new Date().toISOString().split('T')[0])}
+          onClick={() => openCreateTaskModal(getTodayString())}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-xs font-mono font-medium hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97] shadow-glow"
         >
           <Plus className="w-4 h-4" />

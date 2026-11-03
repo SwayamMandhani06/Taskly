@@ -1,4 +1,4 @@
-import { format, addDays, parseISO, isToday, isTomorrow, isBefore, isAfter, startOfDay } from 'date-fns';
+import { format, addDays, addMonths, parseISO, isToday, isTomorrow, isBefore, isAfter, startOfDay } from 'date-fns';
 
 export function getTodayString(): string {
   return format(new Date(), 'yyyy-MM-dd');
@@ -47,21 +47,26 @@ export function isTaskDueToday(dateStr?: string): boolean {
 
 /**
  * Calculates recurring next due date.
+ * If the current due date is in the past, advances to the next future occurrence.
  */
 export function calculateNextDueDate(currentDueDateStr: string | undefined, interval: 'daily' | 'weekly' | 'monthly'): string {
-  const baseDate = currentDueDateStr ? parseISO(currentDueDateStr) : new Date();
-  
-  if (interval === 'daily') {
-    return format(addDays(baseDate, 1), 'yyyy-MM-dd');
-  } else if (interval === 'weekly') {
-    return format(addDays(baseDate, 7), 'yyyy-MM-dd');
-  } else if (interval === 'monthly') {
-    // Add 1 month approx 30 days or date-fns addMonths
-    const year = baseDate.getFullYear();
-    const month = baseDate.getMonth();
-    const day = baseDate.getDate();
-    const nextMonth = new Date(year, month + 1, day);
-    return format(nextMonth, 'yyyy-MM-dd');
+  let baseDate = currentDueDateStr ? parseISO(currentDueDateStr) : new Date();
+  const today = startOfDay(new Date());
+
+  const advanceOneInterval = (date: Date): Date => {
+    if (interval === 'daily') return addDays(date, 1);
+    if (interval === 'weekly') return addDays(date, 7);
+    if (interval === 'monthly') return addMonths(date, 1);
+    return date;
+  };
+
+  // Advance by interval
+  baseDate = advanceOneInterval(baseDate);
+
+  // If the calculated next due date is still in the past, advance until it reaches today or future
+  while (isBefore(baseDate, today)) {
+    baseDate = advanceOneInterval(baseDate);
   }
-  return currentDueDateStr || getTodayString();
+
+  return format(baseDate, 'yyyy-MM-dd');
 }

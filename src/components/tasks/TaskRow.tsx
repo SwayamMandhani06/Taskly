@@ -4,7 +4,7 @@ import { useTaskStore } from '../../store/useTaskStore';
 import { PriorityBar } from '../common/PriorityBar';
 import { CategoryChip } from '../common/CategoryChip';
 import { MonospaceTag } from '../common/MonospaceTag';
-import { formatDueDateDisplay, isTaskOverdue } from '../../utils/dateHelpers';
+import { formatDueDateDisplay, isTaskOverdue, getTodayString, getTomorrowString } from '../../utils/dateHelpers';
 import { CheckSquare, Square, Repeat, FileText, CheckCircle2, Clock, Calendar } from 'lucide-react';
 
 interface TaskRowProps {
@@ -125,23 +125,19 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
       {showInlineTriage && !task.completed && (
         <div
           onClick={e => e.stopPropagation()}
-          className="hidden sm:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0"
+          className="flex items-center gap-1 sm:gap-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150 shrink-0"
         >
           <button
             type="button"
-            onClick={e => handleInlineDateChange(e, new Date().toISOString().split('T')[0])}
-            className="px-2.5 py-1 text-[11px] font-mono rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] active:scale-95 transition-all"
+            onClick={e => handleInlineDateChange(e, getTodayString())}
+            className="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-mono rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] active:scale-95 transition-all"
           >
             Today
           </button>
           <button
             type="button"
-            onClick={e => {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              handleInlineDateChange(e, tomorrow.toISOString().split('T')[0]);
-            }}
-            className="px-2.5 py-1 text-[11px] font-mono rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] active:scale-95 transition-all"
+            onClick={e => handleInlineDateChange(e, getTomorrowString())}
+            className="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-mono rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] active:scale-95 transition-all"
           >
             Tomorrow
           </button>
@@ -151,7 +147,7 @@ export const TaskRow: React.FC<TaskRowProps> = ({ task, showInlineTriage = false
             <button
               type="button"
               onClick={() => dateInputRef.current?.showPicker()}
-              className="px-2.5 py-1 text-[11px] font-mono rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] active:scale-95 transition-all inline-flex items-center gap-1"
+              className="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-[11px] font-mono rounded-full bg-[var(--surface-2)] border border-[var(--border)] text-[var(--ink)] hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] active:scale-95 transition-all inline-flex items-center gap-1"
             >
               <Calendar className="w-3 h-3" />
               <span>Pick date</span>

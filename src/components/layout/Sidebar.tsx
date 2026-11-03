@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTaskStore } from '../../store/useTaskStore';
 import { ViewMode } from '../../types';
+import { getTodayString } from '../../utils/dateHelpers';
 import { ThemeToggle } from './ThemeToggle';
 import {
   Sun,
@@ -33,7 +34,7 @@ export const Sidebar: React.FC = () => {
     signOut,
   } = useTaskStore();
 
-  const todayCount = tasks.filter(t => t.dueDate === new Date().toISOString().split('T')[0] && !t.completed).length;
+  const todayCount = tasks.filter(t => t.dueDate === getTodayString() && !t.completed).length;
   const inboxCount = tasks.filter(t => !t.dueDate && !t.completed).length;
 
   const navItems: NavItem[] = [
