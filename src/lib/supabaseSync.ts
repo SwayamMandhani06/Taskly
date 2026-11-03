@@ -56,7 +56,11 @@ export const flushOfflineQueue = async (userId: string) => {
   for (const item of queue) {
     try {
       if (item.type === 'upsert') {
-        await supabase.from(item.table).upsert({ ...item.payload, user_id: userId });
+        if (item.table === 'habit_logs') {
+          await supabase.from(item.table).upsert({ ...item.payload, user_id: userId }, { onConflict: 'user_id, date' });
+        } else {
+          await supabase.from(item.table).upsert({ ...item.payload, user_id: userId });
+        }
       } else if (item.type === 'delete') {
         await supabase.from(item.table).delete().eq('id', item.payload.id).eq('user_id', userId);
       }
@@ -120,14 +124,14 @@ export const migrateLocalDataToCloud = async (userId: string) => {
 
     if (localLogs.length > 0) {
       const logRows = localLogs.map(l => ({
-        id: `log-${l.date}`,
+        id: `log-${userId}-${l.date}`,
         user_id: userId,
         date: l.date,
         completed_habits: l.completedHabits || {},
         updated_at: new Date().toISOString(),
       }));
 
-      await supabase.from('habit_logs').upsert(logRows);
+      await supabase.from('habit_logs').upsert(logRows, { onConflict: 'user_id, date' });
     }
 
     localStorage.setItem(migrationKey, 'true');
@@ -186,18 +190,71 @@ export const pullAndMergeFromCloud = async (userId: string): Promise<{
       completedHabits: r.completed_habits || {},
     }));
 
-    // Perform Dexie transactional merge
+    // Perform safe merge preserving all local and remote data
+    const localTasks = await db.tasks.toArray();
+    const localHabits = await db.habits.toArray();
+    const localLogs = await db.habitLogs.toArray();
+
+    // 1. Tasks: union remote + local (preserving unpushed local tasks)
+    const combinedTasksMap = new Map<string, Task>();
+    remoteTasks.forEach(t => combinedTasksMap.set(t.id, t));
+    const unpushedTasks: Task[] = [];
+    localTasks.forEach(t => {
+      if (!combinedTasksMap.has(t.id)) {
+        combinedTasksMap.set(t.id, t);
+        unpushedTasks.push(t);
+      }
+    });
+    const finalTasks = Array.from(combinedTasksMap.values());
+
+    // 2. Habits: union remote + local
+    const combinedHabitsMap = new Map<string, Habit>();
+    remoteHabits.forEach(h => combinedHabitsMap.set(h.id, h));
+    const unpushedHabits: Habit[] = [];
+    localHabits.forEach(h => {
+      if (!combinedHabitsMap.has(h.id)) {
+        combinedHabitsMap.set(h.id, h);
+        unpushedHabits.push(h);
+      }
+    });
+    const finalHabits = Array.from(combinedHabitsMap.values());
+
+    // 3. Habit logs: merge checkmarks per date
+    const combinedLogsMap = new Map<string, HabitLogEntry>();
+    remoteLogs.forEach(l => combinedLogsMap.set(l.date, l));
+    const unpushedLogs: HabitLogEntry[] = [];
+    localLogs.forEach(l => {
+      const existing = combinedLogsMap.get(l.date);
+      if (!existing) {
+        combinedLogsMap.set(l.date, l);
+        unpushedLogs.push(l);
+      } else {
+        const mergedCompleted = { ...existing.completedHabits, ...l.completedHabits };
+        combinedLogsMap.set(l.date, { date: l.date, completedHabits: mergedCompleted });
+      }
+    });
+    const finalLogs = Array.from(combinedLogsMap.values());
+
     await db.transaction('rw', [db.tasks, db.habits, db.habitLogs], async () => {
       await db.tasks.clear();
       await db.habits.clear();
       await db.habitLogs.clear();
 
-      if (remoteTasks.length > 0) await db.tasks.bulkAdd(remoteTasks);
-      if (remoteHabits.length > 0) await db.habits.bulkAdd(remoteHabits);
-      if (remoteLogs.length > 0) await db.habitLogs.bulkAdd(remoteLogs);
+      if (finalTasks.length > 0) await db.tasks.bulkAdd(finalTasks);
+      if (finalHabits.length > 0) await db.habits.bulkAdd(finalHabits);
+      if (finalLogs.length > 0) await db.habitLogs.bulkAdd(finalLogs);
     });
 
-    return { tasks: remoteTasks, habits: remoteHabits, habitLogs: remoteLogs };
+    // Background push any un-synced items to cloud
+    if (unpushedTasks.length > 0 || unpushedHabits.length > 0 || unpushedLogs.length > 0) {
+      setTimeout(async () => {
+        for (const t of unpushedTasks) await pushTaskUpsert(t, userId);
+        for (const h of unpushedHabits) await pushHabitUpsert(h, userId);
+        for (const l of unpushedLogs) await pushHabitLogUpsert(l, userId);
+      }, 200);
+    }
+
+    return { tasks: finalTasks, habits: finalHabits, habitLogs: finalLogs };
   } catch (err) {
     console.error('Failed to pull remote data from Supabase', err);
     const tasks = await db.tasks.toArray();
@@ -295,7 +352,7 @@ export const pushHabitDelete = async (habitId: string, userId: string) => {
 
 export const pushHabitLogUpsert = async (log: HabitLogEntry, userId: string) => {
   const row = {
-    id: `log-${log.date}`,
+    id: `log-${userId}-${log.date}`,
     user_id: userId,
     date: log.date,
     completed_habits: log.completedHabits || {},
@@ -308,7 +365,7 @@ export const pushHabitLogUpsert = async (log: HabitLogEntry, userId: string) => 
   }
 
   try {
-    await supabase.from('habit_logs').upsert(row);
+    await supabase.from('habit_logs').upsert(row, { onConflict: 'user_id, date' });
   } catch (err) {
     console.error('Habit log cloud push failed, queuing offline op', err);
     enqueueOfflineOp({ table: 'habit_logs', type: 'upsert', payload: row });
@@ -320,19 +377,36 @@ export const setupSupabaseRealtime = (userId: string, onSync: () => void) => {
   if (!isSupabaseConfigured() || !supabase) return () => {};
 
   const client = supabase;
+  let timer: any = null;
+
+  const debouncedSync = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      onSync();
+    }, 400);
+  };
 
   const channel = client
     .channel(`taskly-realtime-${userId}`)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', filter: `user_id=eq.${userId}` },
-      () => {
-        onSync();
-      }
+      { event: '*', schema: 'public', table: 'tasks', filter: `user_id=eq.${userId}` },
+      debouncedSync
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${userId}` },
+      debouncedSync
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'habit_logs', filter: `user_id=eq.${userId}` },
+      debouncedSync
     )
     .subscribe();
 
   return () => {
+    if (timer) clearTimeout(timer);
     client.removeChannel(channel);
   };
 };

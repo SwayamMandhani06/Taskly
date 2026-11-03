@@ -35,6 +35,7 @@ interface TaskStore {
   isEditorOpen: boolean;
   editingTaskId: string | null;
   editorInitialDate?: string;
+  editorInitialCategory?: string;
 
   isHabitEditorOpen: boolean;
   editingHabitId: string | null;
@@ -45,6 +46,7 @@ interface TaskStore {
 
   // Database initialization & load
   loadData: () => Promise<void>;
+  seedSampleData: () => Promise<void>;
   syncWithCloud: () => Promise<void>;
   signOut: () => Promise<void>;
 
@@ -65,7 +67,7 @@ interface TaskStore {
   toggleHabitToday: (habitId: string, dateStr?: string) => Promise<void>;
 
   // UI modal actions
-  openCreateTaskModal: (initialDate?: string) => void;
+  openCreateTaskModal: (initialDate?: string, initialCategory?: string) => void;
   openEditTaskModal: (taskId: string) => void;
   closeTaskModal: () => void;
 
@@ -130,6 +132,7 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     isEditorOpen: false,
     editingTaskId: null,
     editorInitialDate: undefined,
+    editorInitialCategory: undefined,
 
     isHabitEditorOpen: false,
     editingHabitId: null,
@@ -146,6 +149,14 @@ export const useTaskStore = create<TaskStore>((set, get) => {
         let tasks = await db.tasks.toArray();
         let habits = await db.habits.toArray();
         let habitLogs = await db.habitLogs.toArray();
+
+        // If local DB is completely empty and uninitialized, seed starter data
+        if (tasks.length === 0 && habits.length === 0 && !localStorage.getItem('taskly-initialized')) {
+          await get().seedSampleData();
+          tasks = await db.tasks.toArray();
+          habits = await db.habits.toArray();
+          habitLogs = await db.habitLogs.toArray();
+        }
 
         set({ tasks, habits, habitLogs, initialized: true });
 
@@ -216,6 +227,80 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       }
     },
 
+    seedSampleData: async () => {
+      try {
+        const today = getTodayString();
+        const initialTasks: Task[] = [
+          {
+            id: `task-${Date.now()}-1`,
+            title: 'Welcome to Taskly — Explore Plan My Day',
+            notes: 'Review your combined agenda of daily tasks and habits.',
+            priority: 'high',
+            dueDate: today,
+            dueTime: '09:00',
+            category: 'Personal',
+            subtasks: [
+              { id: 'st-1', text: 'Check off this subtask', done: true },
+              { id: 'st-2', text: 'Review priority indicator bars on each row', done: false },
+            ],
+            recurring: 'none',
+            estimateMinutes: 15,
+            completed: false,
+            createdAt: Date.now() - 3600000,
+          },
+          {
+            id: `task-${Date.now()}-2`,
+            title: 'Organize tasks by category and priority',
+            notes: 'Tag items to track distribution across projects.',
+            priority: 'medium',
+            dueDate: today,
+            category: 'Work',
+            subtasks: [],
+            recurring: 'none',
+            estimateMinutes: 30,
+            completed: false,
+            createdAt: Date.now() - 1800000,
+          },
+          {
+            id: `task-${Date.now()}-3`,
+            title: 'Quick capture ideas into the Inbox',
+            priority: 'low',
+            category: 'Ideas',
+            subtasks: [],
+            recurring: 'none',
+            completed: false,
+            createdAt: Date.now(),
+          },
+        ];
+
+        const initialHabits: Habit[] = [
+          {
+            id: `habit-${Date.now()}-1`,
+            title: 'Daily Deep Work Session',
+            category: 'Work',
+            priority: 'urgent',
+            estimateMinutes: 60,
+            createdAt: Date.now() - 86400000,
+          },
+          {
+            id: `habit-${Date.now()}-2`,
+            title: 'Morning Review & Planning',
+            category: 'Personal',
+            priority: 'high',
+            estimateMinutes: 15,
+            createdAt: Date.now() - 86400000,
+          },
+        ];
+
+        await db.tasks.bulkAdd(initialTasks);
+        await db.habits.bulkAdd(initialHabits);
+        localStorage.setItem('taskly-initialized', 'true');
+        set({ tasks: initialTasks, habits: initialHabits, habitLogs: [] });
+      } catch (err) {
+        console.error('Failed to seed sample data', err);
+      }
+    },
+
     syncWithCloud: async () => {
       const user = get().user;
       if (!user) return;
@@ -234,9 +319,20 @@ export const useTaskStore = create<TaskStore>((set, get) => {
     signOut: async () => {
       if (supabase) {
         await supabase.auth.signOut();
-        set({ session: null, user: null });
-        get().addToast('info', 'Logged out.');
       }
+      if (realtimeCleanup) {
+        realtimeCleanup();
+        realtimeCleanup = null;
+      }
+      // Save an auto-backup snapshot before resetting active tables
+      await get().createAutoBackup();
+
+      // Reset active tables to prevent cross-account data leakage on shared devices
+      await db.tasks.clear();
+      await db.habits.clear();
+      await db.habitLogs.clear();
+      set({ session: null, user: null, tasks: [], habits: [], habitLogs: [] });
+      get().addToast('info', 'Logged out.');
     },
 
     setActiveView: (view: ViewMode) => set({ activeView: view }),
@@ -655,9 +751,12 @@ export const useTaskStore = create<TaskStore>((set, get) => {
       }
     },
 
-    openCreateTaskModal: (initialDate) => set({ isEditorOpen: true, editingTaskId: null, editorInitialDate: initialDate }),
-    openEditTaskModal: (taskId) => set({ isEditorOpen: true, editingTaskId: taskId, editorInitialDate: undefined }),
-    closeTaskModal: () => set({ isEditorOpen: false, editingTaskId: null, editorInitialDate: undefined }),
+    openCreateTaskModal: (initialDate, initialCategory) =>
+      set({ isEditorOpen: true, editingTaskId: null, editorInitialDate: initialDate, editorInitialCategory: initialCategory }),
+    openEditTaskModal: (taskId) =>
+      set({ isEditorOpen: true, editingTaskId: taskId, editorInitialDate: undefined, editorInitialCategory: undefined }),
+    closeTaskModal: () =>
+      set({ isEditorOpen: false, editingTaskId: null, editorInitialDate: undefined, editorInitialCategory: undefined }),
 
     openCreateHabitModal: () => set({ isHabitEditorOpen: true, editingHabitId: null }),
     openEditHabitModal: (habitId) => set({ isHabitEditorOpen: true, editingHabitId: habitId }),

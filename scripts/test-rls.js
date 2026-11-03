@@ -1,7 +1,28 @@
 import { createClient } from '@supabase/supabase-js';
+import fs from 'fs';
+import path from 'path';
 
-const url = 'https://bbgbgtrtbenlbzvsqdlf.supabase.co';
-const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJiZ2JndHJ0YmVubGJ6dnNxZGxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczOTQyNjcsImV4cCI6MjEwMjk3MDI2N30.3c8xNxUk9rq4tdRNc9iY-cfE-NUkpPQWGNuBT02ooh4';
+let url = process.env.VITE_SUPABASE_URL;
+let key = process.env.VITE_SUPABASE_ANON_KEY;
+
+if (!url || !key) {
+  try {
+    const envPath = path.resolve('.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      content.split('\n').forEach(line => {
+        const [k, ...v] = line.trim().split('=');
+        if (k === 'VITE_SUPABASE_URL') url = v.join('=');
+        if (k === 'VITE_SUPABASE_ANON_KEY') key = v.join('=');
+      });
+    }
+  } catch (e) {}
+}
+
+if (!url || !key) {
+  console.error('Supabase URL or Anon Key missing in environment.');
+  process.exit(1);
+}
 
 const supabase = createClient(url, key);
 
