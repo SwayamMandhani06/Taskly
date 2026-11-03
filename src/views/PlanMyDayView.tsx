@@ -2,6 +2,7 @@ import React from 'react';
 import { useTaskStore } from '../store/useTaskStore';
 import { SegmentedProgressBar } from '../components/common/SegmentedProgressBar';
 import { isTaskOverdue, isTaskDueToday, getTodayString } from '../utils/dateHelpers';
+import { startOfDay } from 'date-fns';
 import { calculateHabitStreak } from '../utils/streakCalculator';
 import { CheckSquare, Square, Circle, CheckCircle2, ListTodo } from 'lucide-react';
 import { PriorityLevel } from '../types';
@@ -22,12 +23,14 @@ export const PlanMyDayView: React.FC = () => {
   const todayStr = getTodayString();
 
   const planItems: UnifiedPlanItem[] = [];
+  const todayStartMs = startOfDay(new Date()).getTime();
 
   tasks.forEach(t => {
-    const overdue = isTaskOverdue(t.dueDate) && !t.completed;
+    const wasOverdue = isTaskOverdue(t.dueDate);
     const dueToday = isTaskDueToday(t.dueDate);
+    const completedToday = Boolean(t.completed && t.completedAt && t.completedAt >= todayStartMs);
 
-    if (overdue || dueToday) {
+    if (dueToday || (wasOverdue && (!t.completed || completedToday))) {
       planItems.push({
         id: t.id,
         type: 'task',
@@ -35,7 +38,7 @@ export const PlanMyDayView: React.FC = () => {
         priority: t.priority,
         estimateMinutes: t.estimateMinutes,
         completed: t.completed,
-        isOverdue: overdue,
+        isOverdue: wasOverdue,
       });
     }
   });

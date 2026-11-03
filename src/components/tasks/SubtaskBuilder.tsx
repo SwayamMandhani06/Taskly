@@ -66,7 +66,7 @@ export const SubtaskBuilder: React.FC<SubtaskBuilderProps> = ({ subtasks, onChan
             <button
               type="button"
               onClick={() => handleDelete(st.id)}
-              className="text-[var(--ink-soft)] hover:text-[var(--urgent)] p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-[var(--ink-soft)] hover:text-[var(--urgent)] p-1 opacity-80 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
               aria-label="Delete subtask"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -87,7 +87,7 @@ export const SubtaskBuilder: React.FC<SubtaskBuilderProps> = ({ subtasks, onChan
             }
           }}
           placeholder="Add subtask..."
-          className="flex-1 text-xs px-3 py-1.5 rounded border border-[var(--border)] bg-white focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
+          className="flex-1 text-xs px-3 py-1.5 rounded border border-[var(--border)] bg-[var(--surface-2)] text-[var(--ink)] focus:bg-[var(--surface)] focus:outline-none focus:ring-1 focus:ring-[var(--accent)]"
         />
         <button
           type="button"

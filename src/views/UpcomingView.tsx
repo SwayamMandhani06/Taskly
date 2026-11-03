@@ -15,12 +15,16 @@ interface DateGroup {
 export const UpcomingView: React.FC = () => {
   const { tasks, openCreateTaskModal } = useTaskStore();
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const today = startOfDay(new Date());
   const fourteenDaysLater = addDays(today, 14);
 
+  // Total completed upcoming count
+  const completedUpcomingCount = tasks.filter(t => t.dueDate && isAfter(parseISO(t.dueDate), today) && t.completed).length;
+
   // Filter tasks due after today
-  const upcomingTasks = tasks.filter(t => t.dueDate && isAfter(parseISO(t.dueDate), today));
+  const upcomingTasks = tasks.filter(t => t.dueDate && isAfter(parseISO(t.dueDate), today) && (showCompleted ? true : !t.completed));
 
   const nearTermGroupMap = new Map<string, Task[]>();
   const laterTasks: Task[] = [];
@@ -74,14 +78,30 @@ export const UpcomingView: React.FC = () => {
             Scheduled tasks for the next days, weeks & beyond
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => openCreateTaskModal()}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-xs font-mono font-medium hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97] shadow-glow"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Task</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {completedUpcomingCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowCompleted(!showCompleted)}
+              className={`px-3 py-1.5 text-xs font-mono rounded-full border transition-all active:scale-95 ${
+                showCompleted
+                  ? 'bg-[var(--accent)] text-white border-[var(--accent)]'
+                  : 'bg-[var(--surface-2)] text-[var(--ink-soft)] border-[var(--border)] hover:text-[var(--ink)]'
+              }`}
+            >
+              {showCompleted ? 'Hide Completed' : `Show Completed (${completedUpcomingCount})`}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => openCreateTaskModal()}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-xs font-mono font-medium hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97] shadow-glow"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Task</span>
+          </button>
+        </div>
       </div>
 
       {groups.length === 0 ? (

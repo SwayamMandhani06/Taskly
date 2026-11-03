@@ -12,6 +12,7 @@ export const TaskEditorModal: React.FC = () => {
     isEditorOpen,
     editingTaskId,
     editorInitialDate,
+    editorInitialCategory,
     closeTaskModal,
     tasks,
     addTask,
@@ -61,7 +62,7 @@ export const TaskEditorModal: React.FC = () => {
         setPriority('medium');
         setDueDate(editorInitialDate || '');
         setDueTime('');
-        setCategory('');
+        setCategory(editorInitialCategory || '');
         setEstimateMinutes(undefined);
         setRecurring('none');
         setSubtasks([]);
@@ -72,7 +73,7 @@ export const TaskEditorModal: React.FC = () => {
         titleInputRef.current?.focus();
       }, 50);
     }
-  }, [isEditorOpen, editingTaskId, editorInitialDate, tasks]);
+  }, [isEditorOpen, editingTaskId, editorInitialDate, editorInitialCategory, tasks]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

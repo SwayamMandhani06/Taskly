@@ -9,6 +9,7 @@ import {
   Sparkles,
   FolderKanban,
   Calendar,
+  Layers,
 } from 'lucide-react';
 
 interface MobileNavItem {
@@ -28,6 +29,7 @@ export const MobileNav: React.FC = () => {
     { id: 'categories', label: 'Category', icon: <FolderKanban className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { id: 'habits', label: 'Habits', icon: <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" /> },
     { id: 'calendar', label: 'Calendar', icon: <Calendar className="w-4 h-4 sm:w-5 sm:h-5" /> },
+    { id: 'all', label: 'All Tasks', icon: <Layers className="w-4 h-4 sm:w-5 sm:h-5" /> },
   ];
 
   return (

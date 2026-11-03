@@ -6,12 +6,15 @@ import { Folder, Plus, ArrowLeft, CheckCircle2, ListTodo, Layers } from 'lucide-
 import { PriorityLevel } from '../types';
 
 export const CategoriesView: React.FC = () => {
-  const { tasks, openCreateTaskModal } = useTaskStore();
+  const { tasks, habits, openCreateTaskModal } = useTaskStore();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  // Extract unique categories (including Uncategorized)
+  // Extract unique categories (including Uncategorized) across tasks & habits
   const categoryNames = Array.from(
-    new Set(tasks.map(t => (t.category?.trim() ? t.category.trim() : 'Uncategorized')))
+    new Set([
+      ...tasks.map(t => (t.category?.trim() ? t.category.trim() : 'Uncategorized')),
+      ...habits.map(h => (h.category?.trim() ? h.category.trim() : 'Uncategorized')),
+    ])
   ).sort();
 
   // Category stats map
@@ -81,7 +84,7 @@ export const CategoriesView: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => openCreateTaskModal()}
+            onClick={() => openCreateTaskModal(undefined, selectedCategory === 'Uncategorized' ? undefined : selectedCategory)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--accent)] text-white text-xs font-mono font-medium hover:bg-[var(--accent-hover)] transition-all duration-150 ease-out hover:-translate-y-0.5 active:scale-[0.97] shadow-glow"
           >
             <Plus className="w-4 h-4" />
